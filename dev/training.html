@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glove Up · training lab</title>
+    <link rel="stylesheet" href="/src/ui/fonts.css" />
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #1b2340; color: #fffaf0;
+        font-family: 'Nunito', system-ui, sans-serif; }
+      #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      #ui { position: fixed; inset: 0; pointer-events: none; }
+      #panel { position: fixed; left: 12px; bottom: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 6px;
+        align-items: center; pointer-events: auto; z-index: 50; }
+      #panel button { font: 700 13px 'Nunito', system-ui, sans-serif; color: #14182b; background: #fffaf0;
+        border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+      #panel button.on { background: #ffc94a; }
+      #panel .sep { width: 10px; }
+      #status { font: 700 12px ui-monospace, Menlo, monospace; background: rgba(20,24,43,.72); padding: 6px 10px;
+        border-radius: 8px; white-space: pre; }
+      #keys { position: fixed; right: 12px; bottom: 56px; font: 600 12px 'Nunito', system-ui, sans-serif; z-index: 50;
+        background: rgba(20,24,43,.72); padding: 8px 10px; border-radius: 10px; line-height: 1.5; max-width: 330px; }
+      #keys b { color: #ffc94a; }
+      #result { position: fixed; left: 50%; top: 70%; transform: translate(-50%, -50%); z-index: 60; display: none;
+        background: rgba(20,24,43,.9); border: 3px solid #ffc94a; border-radius: 22px; padding: 18px 28px; text-align: center;
+        font: 700 15px 'Nunito', system-ui, sans-serif; min-width: 260px; }
+      #result h2 { font: 400 40px 'Lilita One', system-ui, sans-serif; margin: 0 0 4px; color: #ffc94a; letter-spacing: .5px; }
+      #result .medal { font: 400 26px 'Lilita One', system-ui, sans-serif; text-transform: uppercase; }
+      #result .details { opacity: .8; font-size: 13px; margin-top: 6px; }
+      body.shot #panel, body.shot #keys { display: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div id="ui"></div>
+    <div id="result"></div>
+    <div id="keys"></div>
+    <div id="panel"><span id="status">loading…</span></div>
+    <script type="module" src="./training.js"></script>
+  </body>
+</html>

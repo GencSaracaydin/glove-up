@@ -1,0 +1,10 @@
+# a deploy from this folder (npx vercel deploy) uploads the source and Vercel builds it (vercel.json);
+# none of these belong in the upload — the pose models and the MediaPipe runtime are fetched by the build
+node_modules/
+dist/
+test-results/
+recordings/
+dev/clips/
+public/models/
+public/mediapipe/
+.env*

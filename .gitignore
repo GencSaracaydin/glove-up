@@ -1,0 +1,13 @@
+node_modules/
+dist/
+public/models/
+public/mediapipe/
+test-results/
+recordings/
+# patch leftovers (patch -b / failed hunks) never belong in a commit
+*.orig
+*.rej
+# Vercel's local link and environment files (tokens) never belong in a commit
+.vercel/
+.env*
+.DS_Store

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" class="is-loading">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glove Up</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231b2340'/%3E%3Cpath d='M21 39c-3-5-3.5-12-.5-17.5C23.5 15.5 30 13 36 14.2c6.3 1.2 10.3 6.3 10.3 12.6 0 5.6-2.4 10.1-6.3 12.7z' fill='%23ff6b5a' stroke='%23fffaf0' stroke-width='2.5'/%3E%3Cpath d='M22.3 30.5c-3.6-1.4-7.2.4-7.6 3.6-.4 3 2.4 5.1 6.4 5.2' fill='%23ff6b5a' stroke='%23fffaf0' stroke-width='2.5'/%3E%3Crect x='20' y='38.5' width='21' height='9' rx='3' fill='%23ffd166' stroke='%23fffaf0' stroke-width='2.5'/%3E%3C/svg%3E" />
+    <!-- fonts are self-hosted (src/ui/fonts.css) and MediaPipe's usage statistics are switched off
+         (src/input/no-telemetry.js): the game makes no third-party requests -->
+    <!-- the faces the loading screen and the title draw first, fetched with the scripts instead of after them -->
+    <link rel="preload" href="/node_modules/@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/node_modules/@fontsource/nunito/files/nunito-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/node_modules/@fontsource/nunito/files/nunito-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/src/ui/fonts.css" />
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+    <style>
+      /* Loading screen (src/app/splash.js): painted before any script runs. Its motion is transform-only, so it
+         keeps moving while the page builds the game and draws the first frame; it fades into the title, whose
+         intro waits for it (html.is-loading). Colours: the arena sky of styles.css. */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(14px, 3.2vmin, 32px);
+        background: radial-gradient(ellipse 120% 90% at 50% 38%, #2d3a66 0%, #1b2340 70%);
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+      }
+      #splash.is-done {
+        opacity: 0;
+      }
+      .splash__mark {
+        width: clamp(84px, 19vmin, 190px);
+        height: clamp(84px, 19vmin, 190px);
+        margin-bottom: calc(clamp(84px, 19vmin, 190px) * -0.16);
+        filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.3));
+        animation: splash-jab 1.15s ease-in-out infinite;
+      }
+      .splash__name {
+        font-family: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+        font-size: clamp(38px, 9vmin, 104px);
+        line-height: 1;
+        letter-spacing: 0.02em;
+        color: #ff6b5a;
+        text-shadow: 0 0.06em 0 #14182b, 0.035em 0.035em 0 #14182b, -0.035em 0.035em 0 #14182b, 0 0.12em 0 #14182b;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+      }
+      .splash__name b {
+        font-weight: inherit;
+        color: #ffc94a;
+      }
+      html.splash-fonts .splash__name {
+        opacity: 1;
+      }
+      .splash__bar {
+        width: clamp(140px, 26vmin, 280px);
+        height: clamp(6px, 1vmin, 10px);
+        border-radius: 999px;
+        background: rgba(255, 250, 240, 0.16);
+        overflow: hidden;
+      }
+      .splash__bar span {
+        display: block;
+        width: 38%;
+        height: 100%;
+        border-radius: inherit;
+        background: #ffc94a;
+        animation: splash-bar 1.25s ease-in-out infinite;
+      }
+      .splash__sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
+      @keyframes splash-jab {
+        0%, 100% { transform: translateX(0) rotate(-12deg); }
+        42% { transform: translateX(22%) rotate(-4deg) scale(1.06); }
+      }
+      @keyframes splash-bar {
+        0% { transform: translateX(-105%); }
+        100% { transform: translateX(270%); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash__mark, .splash__bar span { animation: none; }
+        .splash__bar span { width: 100%; opacity: 0.45; }
+      }
+      /* the in-game "Reduced motion" setting (html.splash-still, set below) stills it too */
+      html.splash-still .splash__mark, html.splash-still .splash__bar span { animation: none; }
+      html.splash-still .splash__bar span { width: 100%; opacity: 0.45; }
+      /* the game's code never ran (a download failed, or this browser can't run it): say so, offer a reload */
+      .splash__fail {
+        max-width: min(34rem, 86vw);
+        margin: 0;
+        text-align: center;
+        font: 700 clamp(15px, 2.4vmin, 22px)/1.4 'Nunito', 'Arial Rounded MT Bold', system-ui, sans-serif;
+        color: #fffaf0;
+      }
+      .splash__fail button {
+        display: block;
+        margin: 0.9em auto 0;
+        padding: 0.45em 1.6em;
+        border: 3px solid #14182b;
+        border-radius: 999px;
+        background: #ff6b5a;
+        color: #14182b;
+        font: inherit;
+        font-family: 'Lilita One', 'Arial Rounded MT Bold', system-ui, sans-serif;
+        font-size: 1.15em;
+        cursor: pointer;
+      }
+      #splash.is-failed { pointer-events: auto; }
+      #splash.is-failed .splash__bar { display: none; }
+      #splash.is-failed .splash__mark { animation: none; }
+    </style>
+    <script>
+      // the in-game "Reduced motion" setting (src/core/storage.js STORAGE_KEYS.settings) also stills the loading screen
+      try { if ((JSON.parse(localStorage.getItem('gloveup:v1:settings')) || {}).reducedMotion === true) document.documentElement.classList.add('splash-still'); } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="splash" role="status">
+      <svg class="splash__mark" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M21 39c-3-5-3.5-12-.5-17.5C23.5 15.5 30 13 36 14.2c6.3 1.2 10.3 6.3 10.3 12.6 0 5.6-2.4 10.1-6.3 12.7z" fill="#ff6b5a" stroke="#14182b" stroke-width="2.6" stroke-linejoin="round" />
+        <path d="M22.3 30.5c-3.6-1.4-7.2.4-7.6 3.6-.4 3 2.4 5.1 6.4 5.2" fill="#ff6b5a" stroke="#14182b" stroke-width="2.6" stroke-linejoin="round" />
+        <path d="M28 19.5c3-1.6 6.6-1.8 9.4-.4" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="2.4" stroke-linecap="round" />
+        <rect x="20" y="38.5" width="21" height="9" rx="3" fill="#fffaf0" stroke="#14182b" stroke-width="2.6" />
+        <path d="M21.5 43h18" stroke="#3d7bff" stroke-width="2.6" stroke-linecap="round" />
+      </svg>
+      <div class="splash__name" aria-hidden="true">GLOVE <b>UP</b></div>
+      <div class="splash__bar" aria-hidden="true"><span></span></div>
+      <div class="splash__fail" hidden>
+        Glove Up couldn’t load. Check your connection and reload. It needs a recent Chrome, Edge or Safari.
+        <button type="button" onclick="location.reload()">Reload</button>
+      </div>
+      <noscript><style>.splash__bar, .splash__sr { display: none; } .splash__mark { animation: none; } .splash__name { opacity: 1; }</style><p class="splash__fail">Glove Up needs JavaScript switched on.</p></noscript>
+      <span class="splash__sr">Loading Glove Up…</span>
+    </div>
+    <script>
+      (function () {
+        var d = document.documentElement, done = function () { d.classList.add('splash-fonts'); };
+        // show the loading screen's name once its face is in (never a fallback font swapping in); at most 0.7 s
+        try { document.fonts.load('1em "Lilita One"').then(done, done); } catch (e) { done(); }
+        setTimeout(done, 700);
+        // If the game's code never runs (a download failed, or this browser can't run it), the loading screen says
+        // so instead of loading forever. src/main.js sets window.__gloveMain as its first statement; a module script
+        // has either run or failed by the 'load' event, so a slow network never counts as a failure.
+        var fail = function () {
+          if (window.__gloveMain) return;
+          var s = document.getElementById('splash');
+          if (!s || s.className.indexOf('is-failed') >= 0) return;
+          s.className += ' is-failed';
+          d.className = d.className.replace(/\bis-loading\b/, '');
+          var f = s.querySelector('.splash__fail'), sr = s.querySelector('.splash__sr');
+          if (f) f.hidden = false;
+          if (sr) sr.textContent = 'Glove Up couldn’t load.';
+        };
+        window.addEventListener('error', function (e) { if (e && e.target && e.target.tagName === 'SCRIPT') fail(); }, true);
+        window.addEventListener('load', function () { if (!window.__gloveMain) fail(); });
+      })();
+    </script>
+    <div id="app">
+      <!-- 3D scene (Three.js) fills the window -->
+      <canvas id="scene"></canvas>
+      <!-- DOM overlay: menus, HUD, banners, pause, webcam preview -->
+      <div id="ui"></div>
+      <!-- camera feed used by MediaPipe; shown only through UI previews -->
+      <video id="cam" playsinline muted autoplay></video>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

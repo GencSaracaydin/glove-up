@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glove Up · arena lab</title>
+    <link rel="stylesheet" href="/src/ui/fonts.css" />
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #1b2340; color: #fffaf0;
+        font-family: 'Nunito', system-ui, sans-serif; }
+      #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+      #panel { position: fixed; left: 12px; bottom: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 6px;
+        align-items: center; pointer-events: auto; }
+      #panel button { font: 700 13px 'Nunito', system-ui, sans-serif; color: #14182b; background: #fffaf0;
+        border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+      #panel button.on { background: #ffc94a; }
+      #status { font: 700 13px ui-monospace, Menlo, monospace; background: rgba(20,24,43,.72); padding: 6px 10px;
+        border-radius: 8px; white-space: pre; }
+      body.shot #panel { display: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div id="panel"><span id="status">loading…</span></div>
+    <script type="module" src="./arena.js"></script>
+  </body>
+</html>

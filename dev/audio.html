@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glove Up — Audio lab</title>
+    <link rel="stylesheet" href="/src/ui/fonts.css" />
+    <style>
+      :root {
+        --ink: #14182b; --paper: #fffaf0; --paper-2: #f3ead8; --accent: #ff6b5a; --good: #2bb3a3; --warn: #ffc94a;
+        --p1: #3d7bff; --p2: #ff4d5e; --sky-top: #1b2340; --sky-bottom: #2d3a66; --gold: #ffd166; --mint: #5bd1b8;
+        --peri: #6c8dff; --purple: #c77dff; --pink: #ff5d8f; --lime: #9be564; --orange: #ff8a5b; --muted: #6b7290;
+        --display: 'Lilita One', 'Arial Rounded MT Bold', system-ui, sans-serif;
+        --body: 'Nunito', 'Arial Rounded MT Bold', system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom)) fixed;
+        color: var(--paper); font-family: var(--body); font-weight: 600; padding: 22px 26px 40px;
+      }
+      header { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
+      header h1 { font-family: var(--display); font-weight: 400; font-size: 42px; line-height: 1; margin: 0; letter-spacing: 0.5px; }
+      header h1 small { display: block; font-family: var(--body); font-size: 14px; font-weight: 800; opacity: 0.75; letter-spacing: 0; margin-top: 6px; }
+      .spacer { flex: 1; }
+      .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(255, 250, 240, 0.12); font-weight: 800; font-size: 14px; }
+      .pill .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--p2); box-shadow: 0 0 0 3px rgba(255, 77, 94, 0.25); }
+      .pill.on .dot { background: var(--good); box-shadow: 0 0 0 3px rgba(43, 179, 163, 0.3); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px; align-items: start; }
+      .card {
+        background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 22px;
+        box-shadow: 0 6px 0 var(--ink); padding: 14px 16px 16px;
+      }
+      .card.wide { grid-column: 1 / -1; }
+      .card h2 { font-family: var(--display); font-weight: 400; font-size: 23px; margin: 0 0 10px; display: flex; align-items: center; gap: 9px; }
+      .card h2 .chip { width: 16px; height: 16px; border-radius: 6px; border: 3px solid var(--ink); }
+      .card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 12px 0 6px; font-weight: 900; }
+      .card p.note { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 700; }
+      .btns { display: flex; flex-wrap: wrap; gap: 7px; }
+      button {
+        font-family: var(--body); font-weight: 800; font-size: 13.5px; color: var(--ink); cursor: pointer;
+        background: var(--tint, var(--paper-2)); border: 3px solid var(--ink); border-radius: 999px;
+        padding: 6px 12px 7px; box-shadow: 0 3px 0 var(--ink); transition: transform 0.06s, box-shadow 0.06s, filter 0.1s;
+      }
+      button:hover { filter: brightness(1.06); }
+      button:active, button.hit { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+      button.big { font-size: 17px; padding: 10px 20px 11px; background: var(--accent); color: var(--paper); text-shadow: 0 2px 0 rgba(20, 24, 43, 0.35); }
+      button.ghost { background: transparent; }
+      .t-fight { --tint: #ffd2cc; } .t-bell { --tint: #ffe9a8; } .t-crowd { --tint: #c9f0e6; } .t-music { --tint: #d9e2ff; }
+      .t-train { --tint: #e6f6c9; } .t-ui { --tint: #efe0ff; } .t-bus { --tint: #ffd9c4; }
+      .mixer { display: grid; grid-template-columns: 74px 1fr 44px; gap: 8px 10px; align-items: center; font-weight: 800; }
+      .mixer output { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+      input[type=range] { width: 100%; accent-color: var(--accent); height: 22px; }
+      canvas#meter { width: 100%; height: 86px; display: block; border-radius: 14px; background: var(--ink); margin-top: 12px; }
+      .state { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .state div { background: var(--paper-2); border-radius: 10px; padding: 5px 8px; font-size: 12px; font-weight: 800; }
+      .state div b { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 900; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .row input[type=text] { flex: 1; min-width: 160px; font: 800 14px var(--body); border: 3px solid var(--ink); border-radius: 12px; padding: 6px 10px; background: #fff; color: var(--ink); }
+      label.check { display: inline-flex; gap: 6px; align-items: center; font-weight: 800; font-size: 13px; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+      th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 4px 8px; border-bottom: 3px solid var(--ink); }
+      td { padding: 4px 8px; border-bottom: 1px solid #e7dcc4; font-weight: 800; }
+      td.bar { width: 34%; }
+      td .track { height: 10px; border-radius: 6px; background: #efe5d0; overflow: hidden; }
+      td .lvl { height: 100%; border-radius: 6px; background: var(--good); }
+      td .lvl.hot { background: var(--warn); }
+      td .lvl.clip { background: var(--p2); }
+      .ok { color: var(--good); } .bad { color: var(--p2); } .warn { color: #c58a00; }
+      .report-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+      .report-cols { columns: 2 520px; column-gap: 24px; }
+      .report-cols table { break-inside: avoid; }
+      .log { font: 700 12px ui-monospace, Menlo, monospace; background: var(--ink); color: var(--paper); border-radius: 14px; padding: 10px 12px; min-height: 120px; max-height: 220px; overflow: auto; white-space: pre-wrap; }
+      .log .k { color: var(--gold); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Audio lab<small>Glove Up · every sound is synthesized live — punches, bell, crowd, announcer, music</small></h1>
+      <span class="spacer"></span>
+      <span class="pill" id="status"><span class="dot"></span><span id="status-text">Audio is off</span></span>
+      <button class="big" id="unlock">Enable sound</button>
+    </header>
+    <main class="grid" id="lab"></main>
+    <script type="module" src="/dev/audio.js"></script>
+  </body>
+</html>

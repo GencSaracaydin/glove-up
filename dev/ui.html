@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glove Up — UI lab</title>
+    <link rel="stylesheet" href="/src/ui/fonts.css" />
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+    <style>
+      /* dev-only: a painted stand-in for the 3D scene behind menus/HUD */
+      #backdrop { position: absolute; inset: 0; overflow: hidden; }
+      #backdrop canvas { width: 100%; height: 100%; display: block; }
+      .dev-index { position: absolute; inset: 0; overflow: auto; padding: 2rem 3rem; color: #fffaf0; font-family: 'Nunito', system-ui, sans-serif; pointer-events: auto; }
+      .dev-index h1 { font-family: 'Lilita One', system-ui; font-size: 3rem; margin: 0 0 1rem; }
+      .dev-index h2 { font-family: 'Lilita One', system-ui; font-size: 1.6rem; margin: 1.5rem 0 0.6rem; }
+      .dev-index a { display: inline-block; margin: 0.25rem; padding: 0.5rem 1rem; border-radius: 999px; background: #fffaf0; color: #14182b; font-weight: 800; text-decoration: none; border: 3px solid #14182b; }
+      .dev-index a:hover { background: #ffc94a; }
+      .dev-index p { max-width: 60rem; font-weight: 700; opacity: 0.85; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="backdrop"><canvas id="backdrop-canvas"></canvas></div>
+      <div id="ui"></div>
+      <video id="cam" playsinline muted autoplay></video>
+    </div>
+    <script type="module" src="/dev/ui.js"></script>
+  </body>
+</html>

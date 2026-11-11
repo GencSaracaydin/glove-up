@@ -1,0 +1,12 @@
+/* Glove Up typefaces, self-hosted: no font CDN, no request to a third party (RELEASE-03, PERF-06,
+   VISUAL-07). Lilita One (display) and Nunito (body), both SIL Open Font License 1.1, from the
+   pinned @fontsource packages in package.json. Their CSS declares the faces with the family names
+   'Lilita One' and 'Nunito' (the names styles.css, render/style.js and the canvas text use),
+   font-display: swap and unicode-range subsets, so a page only fetches the subsets it draws.
+   Vite inlines these rules and copies the font files, fingerprinted, into assets/.
+   index.html links this file before styles.css. Licences: public/THIRD_PARTY_NOTICES.txt. */
+@import '@fontsource/lilita-one/400.css';
+@import '@fontsource/nunito/400.css';
+@import '@fontsource/nunito/700.css';
+@import '@fontsource/nunito/800.css';
+@import '@fontsource/nunito/900.css';

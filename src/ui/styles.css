@@ -1,0 +1,4919 @@
+/* Glove Up — every style for menus, HUD and page chrome.
+   Palette = render/style.js PALETTE (keep in sync). Type: Lilita One (display) + Nunito (body).
+   Sizing: 1rem = 16px at 1280×720 and scales with the window (24px at 1920×1080), so every
+   big button (≥ 4.5rem) is ≥ 72px tall at 1280×720. Motion is CSS-only and is reduced by
+   prefers-reduced-motion or the in-game "Reduced motion" setting (.gu-reduced-motion). */
+
+:root {
+  /* palette (render/style.js) */
+  --ink: #14182b;
+  --paper: #fffaf0;
+  --accent: #ff6b5a;
+  --good: #2bb3a3;
+  --warn: #ffc94a;
+  --p1: #3d7bff;
+  --p2: #ff4d5e;
+  --sky-top: #1b2340;
+  --sky-bottom: #2d3a66;
+  --apron: #1f3b73;
+  --gold: #ffd166;
+  --cream: #f7f3ea;
+  --mint: #5bd1b8;
+  --peri: #6c8dff;
+  --purple: #c77dff;
+  --pink: #ff5d8f;
+  --lime: #9be564;
+  --orange: #ff8a5b;
+  /* derived */
+  --accent-dark: #c9473a;
+  --good-dark: #1d8578;
+  --p1-dark: #2554c4;
+  --p2-dark: #c22c3d;
+  --paper-2: #f3ead8;
+  --paper-3: #e7dcc4;
+  --muted: #6b7290;
+  --line: 0.1875rem;
+  --r-xl: 2rem;
+  --r-lg: 1.5rem;
+  --r-md: 1.125rem;
+  --pill: 999rem;
+  --pop: 0 0.375rem 0 var(--ink);
+  --pop-lg: 0 0.5rem 0 var(--ink);
+  --focus: 0 0 0 0.3rem var(--warn);
+  --font-display: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  --font-body: 'Nunito', 'Arial Rounded MT Bold', system-ui, sans-serif;
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 0.12s;
+  --t-med: 0.26s;
+}
+
+/* 16px at 1280×720, 24px at 1920×1080; never smaller than 11px */
+html {
+  font-size: max(11px, min(1.25vw, 2.2222vh));
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--sky-top);
+  color: var(--paper);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* page chrome from index.html */
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse 120% 90% at 50% 38%, var(--sky-bottom) 0%, var(--sky-top) 70%);
+}
+#scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#cam {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ───────────────────────────── layers ───────────────────────────── */
+
+.gu-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-body);
+  color: var(--paper);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.gu-layer {
+  position: absolute;
+  inset: 0;
+}
+.gu-layer--hud {
+  pointer-events: none;
+}
+.gu-layer--screens {
+  pointer-events: none;
+}
+
+.gu-screen {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  transition: opacity var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out), filter var(--t-med);
+}
+.gu-screen--menu {
+  background:
+    radial-gradient(ellipse 85% 75% at 50% 45%, rgba(27, 35, 64, 0.38) 0%, rgba(20, 24, 43, 0.86) 100%);
+}
+.gu-screen--overlay {
+  background: rgba(20, 24, 43, 0.62);
+  backdrop-filter: blur(3px);
+}
+.gu-screen.is-entering {
+  opacity: 0;
+  transform: translateY(1.25rem) scale(0.985);
+}
+.gu-screen.is-leaving {
+  opacity: 0;
+  transform: translateY(-0.75rem) scale(1.01);
+  pointer-events: none;
+}
+.gu-screen.is-covered {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.98);
+}
+.gu-screen.is-done {
+  pointer-events: none;
+  filter: saturate(0.85);
+}
+.gu-screen--overlay.is-entering .gu-modal__card {
+  transform: scale(0.9);
+}
+
+/* ───────────────────────────── page scaffold ───────────────────────────── */
+
+.gu-page:focus,
+.gu-modal:focus {
+  outline: none;
+}
+.gu-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.5rem 2.5rem 1.75rem;
+  /* VISUAL-15 / RV-VISUAL-03: a desktop-size window wider than 1.8:1 (21:9 monitors, a wide browser window) gets a
+     ~16:9 page, centred, so labels stay near their controls. Up to 1.8:1 (16:9, 1366×768, 16:10, 4:3 …) and on
+     phones turned sideways (844×390, 932×430 …: narrower than 1000 px) the plain 2.5rem gutters stay; from 1000 px
+     the extra gutter grows in with the width (no jump while a window is resized across 1000 px). */
+  padding-inline: max(2.5rem, min(calc((100vw - 100vh * 1.8) / 2 + 2.5rem), calc(100vw - 1000px + 2.5rem)));
+  overflow: hidden;
+}
+.gu-header {
+  display: grid;
+  grid-template-columns: minmax(9rem, auto) 1fr minmax(9rem, auto);
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 4.75rem;
+}
+.gu-header__titles {
+  text-align: center;
+  min-width: 0;
+}
+.gu-header__right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+.gu-header__spacer {
+  display: block;
+}
+.gu-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--paper);
+  text-shadow: var(--outline-shadow, 0 0.07em 0 var(--ink), 0.045em 0.045em 0 var(--ink), -0.045em 0.045em 0 var(--ink), 0.045em -0.045em 0 var(--ink), -0.045em -0.045em 0 var(--ink), 0 0.16em 0 rgba(0, 0, 0, 0.25));
+}
+.gu-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: rgba(255, 250, 240, 0.86);
+}
+.gu-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 5rem;
+}
+.gu-footer__spacer {
+  flex: 1;
+}
+.gu-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.gu-row--end {
+  justify-content: flex-end;
+}
+.gu-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.gu-panel {
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-xl);
+  box-shadow: var(--pop-lg);
+  padding: 1.25rem 1.5rem;
+}
+.gu-panel__title {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.gu-panel__title .gu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.gu-panel__title--spaced {
+  margin-top: 1rem;
+}
+.gu-panel__text {
+  margin: 0.25rem 0 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #3a4060;
+}
+.gu-panel__text--help {
+  color: var(--ink);
+}
+
+.gu-icon {
+  width: 1.6em;
+  height: 1.6em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.gu-notice {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1.15rem;
+  border-radius: var(--r-md);
+  border: var(--line) solid var(--ink);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  box-shadow: 0 0.25rem 0 var(--ink);
+}
+.gu-notice--warn {
+  background: var(--warn);
+  color: var(--ink);
+}
+.gu-notice--info {
+  background: var(--cream);
+  color: var(--ink);
+}
+.gu-notice .gu-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.gu-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--pill);
+  font-weight: 900;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  border: 0.125rem solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.gu-chip .gu-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.gu-chip--good {
+  background: var(--good);
+  color: var(--paper);
+}
+.gu-chip--accent {
+  background: var(--accent);
+  color: var(--paper);
+}
+.gu-chip--gold {
+  background: var(--warn);
+}
+.gu-chip--muted {
+  background: var(--paper-2);
+  color: var(--muted);
+  border-color: var(--paper-3);
+}
+.gu-chip--neutral {
+  background: var(--cream);
+}
+.gu-chip--big {
+  font-size: 1.15rem;
+  padding: 0.35rem 1rem;
+}
+
+.gu-pro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.55rem 0.12rem 0.4rem;
+  border-radius: var(--pill);
+  background: linear-gradient(180deg, #ffe08a, var(--warn));
+  color: var(--ink);
+  border: 0.125rem solid var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+.gu-pro .gu-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: var(--ink);
+  stroke: none;
+}
+.gu-pro--big {
+  font-size: 1.5rem;
+  padding: 0.25rem 0.9rem 0.25rem 0.6rem;
+}
+.gu-pro--big .gu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.gu-dot {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--dot, var(--accent));
+  border: 0.125rem solid var(--ink);
+  flex: none;
+}
+
+/* ───────────────────────────── buttons ───────────────────────────── */
+
+.gu-btn {
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --bd: var(--ink);
+  --sh: var(--ink);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 4.5rem;
+  padding: 0.55rem 1.5rem;
+  margin: 0;
+  border-radius: var(--r-lg);
+  border: var(--line) solid var(--bd);
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 0.375rem 0 var(--sh);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.55rem;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  outline: none;
+  transform: translateY(0);
+  transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out), background-color var(--t-med), opacity var(--t-med), filter var(--t-med);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+.gu-btn > * {
+  position: relative;
+  z-index: 1;
+}
+.gu-btn__icon {
+  display: inline-flex;
+}
+.gu-btn__icon .gu-icon {
+  width: 1.9rem;
+  height: 1.9rem;
+  stroke-width: 2.4;
+}
+.gu-btn__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.gu-btn__label {
+  display: block;
+}
+.gu-btn__sub {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  opacity: 0.85;
+}
+.gu-btn__badge {
+  margin-left: auto;
+}
+.gu-btn:hover:not(:disabled),
+.gu-btn:focus-visible {
+  transform: translateY(-0.18rem) scale(1.025);
+  box-shadow: 0 0.55rem 0 var(--sh), var(--focus);
+  z-index: 2;
+}
+.gu-btn:focus:not(:focus-visible):not(:hover) {
+  box-shadow: 0 0.375rem 0 var(--sh);
+}
+.gu-btn:active:not(:disabled),
+.gu-btn.is-pressed {
+  transform: translateY(0.3rem) scale(0.99);
+  box-shadow: 0 0.075rem 0 var(--sh);
+  transition-duration: 0.05s;
+}
+.gu-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: saturate(0.35);
+}
+
+.gu-btn--xl {
+  min-height: 5.5rem;
+  font-size: 2rem;
+  padding: 0.75rem 2rem;
+  border-radius: var(--r-xl);
+}
+.gu-btn--md {
+  font-size: 1.3rem;
+  padding: 0.45rem 1.15rem;
+  border-radius: var(--r-md);
+}
+.gu-btn--md .gu-btn__icon .gu-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.gu-btn--md:not(:has(.gu-btn__text)) {
+  min-width: 4.5rem;
+  padding: 0.45rem;
+}
+
+.gu-btn--primary {
+  --bg: var(--accent);
+  --fg: var(--paper);
+}
+.gu-btn--good {
+  --bg: var(--good);
+  --fg: var(--paper);
+}
+.gu-btn--danger {
+  --bg: #fff1ef;
+  --fg: #c22c3d;
+}
+.gu-btn--danger.is-armed {
+  --bg: var(--p2);
+  --fg: var(--paper);
+  animation: gu-wobble 0.5s var(--ease-out);
+}
+.gu-btn--ghost {
+  --bg: rgba(255, 250, 240, 0.12);
+  --fg: var(--paper);
+  --bd: rgba(255, 250, 240, 0.75);
+  --sh: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+}
+.gu-panel .gu-btn--ghost,
+.gu-modal__card .gu-btn--ghost {
+  --bg: var(--paper-2);
+  --fg: var(--ink);
+  --bd: var(--ink);
+  --sh: var(--ink);
+}
+.gu-btn.is-selected {
+  --bg: var(--warn);
+  --fg: var(--ink);
+  --bd: var(--ink);
+  --sh: var(--ink);
+}
+.gu-btn--card {
+  flex-direction: column;
+  justify-content: flex-start;
+  text-align: center;
+  padding: 1rem;
+  border-radius: var(--r-xl);
+}
+
+/* arming: post-fight buttons fill in while they can't be pressed yet */
+.gu-arming {
+  animation: gu-arm var(--arm-ms, 1.4s) linear both;
+}
+@keyframes gu-arm {
+  0% { opacity: 0.35; filter: saturate(0.2); }
+  99% { opacity: 0.6; filter: saturate(0.4); }
+  100% { opacity: 1; filter: none; }
+}
+
+/* ───────────────────────────── widgets ───────────────────────────── */
+
+.gu-cycler {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.gu-cycler__label,
+.gu-field__label {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gu-cycler__row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 4.5rem;
+  gap: 0.6rem;
+  align-items: center;
+}
+.gu-cycler__value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 4.5rem;
+  padding: 0 0.75rem;
+  border-radius: var(--r-md);
+  background: var(--paper-2);
+  border: var(--line) solid var(--paper-3);
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  color: var(--ink);
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gu-header .gu-cycler__value,
+.gu-camsetup__picker .gu-cycler__value {
+  font-size: 1.15rem;
+}
+.gu-cycler__arrow {
+  padding: 0 !important;
+}
+
+.gu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.gu-input {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--r-md);
+  border: var(--line) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  outline: none;
+  box-shadow: inset 0 0.25rem 0 rgba(20, 24, 43, 0.08);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.gu-input:focus {
+  box-shadow: inset 0 0.25rem 0 rgba(20, 24, 43, 0.08), var(--focus);
+}
+textarea.gu-input {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.95rem;
+  resize: none;
+  min-height: 7rem;
+}
+
+.gu-slider {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 4.5rem 6.5rem;
+  gap: 0.6rem;
+  align-items: center;
+  width: 100%;
+}
+.gu-slider__track {
+  position: relative;
+  height: 4.5rem;
+  border-radius: var(--pill);
+  cursor: pointer;
+  outline: none;
+  touch-action: none;
+}
+.gu-slider__track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1.1rem;
+  transform: translateY(-50%);
+  border-radius: var(--pill);
+  background: var(--paper-2);
+  border: var(--line) solid var(--ink);
+}
+.gu-slider__fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 1.1rem;
+  width: calc(var(--k, 0) * 100%);
+  transform: translateY(-50%);
+  border-radius: var(--pill);
+  background: var(--good);
+  border: var(--line) solid var(--ink);
+}
+.gu-slider__knob {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--k, 0) * 100%);
+  width: 2.4rem;
+  height: 2.4rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.2rem 0 var(--ink);
+}
+.gu-slider__track:focus-visible .gu-slider__knob {
+  box-shadow: 0 0.2rem 0 var(--ink), var(--focus);
+}
+.gu-slider__value {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--ink);
+  text-align: center;
+}
+
+.gu-toggle {
+  gap: 0.9rem !important;
+  min-width: 9.5rem;
+  justify-content: flex-start !important;
+}
+.gu-toggle__track {
+  position: relative;
+  width: 3.6rem;
+  height: 2rem;
+  border-radius: var(--pill);
+  background: var(--paper-3);
+  border: var(--line) solid var(--ink);
+  transition: background var(--t-med);
+}
+.gu-toggle__knob {
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  transform: translateY(-50%);
+  transition: left var(--t-med) var(--ease-pop);
+}
+.gu-toggle.is-on .gu-toggle__track {
+  background: var(--good);
+}
+.gu-toggle.is-on .gu-toggle__knob {
+  left: calc(100% - 1.6rem);
+}
+
+.gu-seg {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.gu-seg__opt {
+  min-width: 5rem;
+}
+
+.gu-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  min-height: 0;
+}
+.gu-tabs__strip {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.gu-tabs__tab {
+  font-size: 1.2rem !important;
+}
+.gu-tabs__panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.35rem;
+  margin: -0.35rem;
+}
+
+.gu-ring {
+  display: block;
+  transform: rotate(-90deg);
+}
+.gu-ring__bg,
+.gu-ring__fg {
+  fill: none;
+  stroke-width: var(--ring-stroke, 12);
+}
+.gu-ring__bg {
+  stroke: rgba(20, 24, 43, 0.12);
+}
+.gu-ring__fg {
+  stroke: var(--warn);
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.12s linear, stroke var(--t-med);
+}
+.gu-ring.is-ok .gu-ring__fg {
+  stroke: var(--good);
+}
+
+.gu-spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 0.3rem solid rgba(255, 250, 240, 0.25);
+  border-top-color: var(--warn);
+  animation: gu-spin 0.8s linear infinite;
+  flex: none;
+}
+@keyframes gu-spin {
+  to { transform: rotate(360deg); }
+}
+
+.gu-portrait {
+  display: block;
+  width: var(--portrait-size, 10rem);
+  height: var(--portrait-size, 10rem);
+  border-radius: 50%;
+  flex: none;
+}
+
+.gu-bubble {
+  position: relative;
+  margin: 0;
+  padding: 0.9rem 1.3rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--pop);
+  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1.35;
+}
+.gu-bubble::before {
+  content: '';
+  position: absolute;
+  left: 1.8rem;
+  top: -0.85rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  background: var(--paper);
+  border-left: var(--line) solid var(--ink);
+  border-top: var(--line) solid var(--ink);
+  transform: rotate(45deg);
+}
+
+.gu-tips[hidden] {
+  display: none;
+}
+.gu-tips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.gu-tips li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+.gu-tips .gu-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--good);
+}
+
+.gu-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  min-width: 26rem;
+}
+.gu-empty__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+}
+.gu-empty__text {
+  margin: 0.5rem 0 0;
+  font-weight: 700;
+  font-size: 1.15rem;
+  max-width: 28rem;
+  opacity: 0.9;
+}
+
+/* ───────────────────────────── title ───────────────────────────── */
+
+/* the title's intro waits for the loading screen (index.html #splash, src/app/splash.js): its letters pop in as
+   the loading screen fades, not half-way through behind it */
+html.is-loading .gu-title-screen,
+html.is-loading .gu-title-screen * {
+  animation-play-state: paused !important;
+}
+
+.gu-title-screen {
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  text-align: center;
+}
+.gu-title__spot {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 70rem;
+  height: 42rem;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, rgba(255, 241, 214, 0.22) 0%, rgba(255, 241, 214, 0) 62%);
+  pointer-events: none;
+  animation: gu-breathe 5s ease-in-out infinite;
+}
+.gu-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.gu-logo__text {
+  display: flex;
+  gap: 1.6rem;
+  font-family: var(--font-display);
+  font-size: 9.5rem;
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+}
+.gu-logo__word {
+  display: flex;
+}
+.gu-logo__ch {
+  display: inline-block;
+  color: var(--accent);
+  text-shadow:
+    0 0.05em 0 var(--ink), 0.035em 0.035em 0 var(--ink), -0.035em 0.035em 0 var(--ink),
+    0.035em -0.035em 0 var(--ink), -0.035em -0.035em 0 var(--ink), 0 0.11em 0 var(--ink), 0 0.17em 0.06em rgba(0, 0, 0, 0.35);
+  animation: gu-letter 2.8s var(--ease-pop) both, gu-bob 3.2s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 70ms), calc(1.1s + var(--i) * 140ms);
+  transform-origin: 50% 90%;
+}
+.gu-logo__word--b .gu-logo__ch {
+  color: var(--warn);
+  animation-delay: calc(350ms + var(--i) * 90ms), calc(1.5s + var(--i) * 140ms);
+}
+.gu-logo__glove {
+  display: inline-flex;
+  width: 7rem;
+  height: 7rem;
+  color: var(--ink);
+  filter: drop-shadow(0 0.4rem 0 rgba(0, 0, 0, 0.3));
+}
+.gu-logo__glove .gu-icon {
+  width: 100%;
+  height: 100%;
+  fill: var(--p1);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+.gu-logo__glove--l {
+  animation: gu-jab-l 2.6s var(--ease-out) 0.6s infinite;
+  transform: rotate(-12deg);
+}
+.gu-logo__glove--r {
+  animation: gu-jab-r 2.6s var(--ease-out) 1.9s infinite;
+  transform: scaleX(-1) rotate(-12deg);
+}
+.gu-logo__glove--r .gu-icon {
+  fill: var(--p2);
+}
+.gu-tagline {
+  margin: -0.25rem 0 1rem;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  color: var(--paper);
+  letter-spacing: 0.04em;
+  text-shadow: 0 0.12em 0 var(--ink);
+  animation: gu-fade-up 0.8s var(--ease-out) 0.9s both;
+}
+.gu-title__start {
+  min-width: 26rem;
+  animation: gu-fade-up 0.7s var(--ease-out) 1.2s both;
+}
+.gu-title__start .gu-btn__sub {
+  font-size: 1rem;
+}
+.gu-title__hints {
+  display: flex;
+  gap: 2.2rem;
+  margin: 1.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  animation: gu-fade-up 0.7s var(--ease-out) 1.5s both;
+}
+.gu-title__hints li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: rgba(255, 250, 240, 0.9);
+}
+.gu-title__hints .gu-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  color: var(--warn);
+}
+.gu-title__version {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.6;
+}
+
+@keyframes gu-letter {
+  0% { transform: translateY(-1.4em) scale(0.6) rotate(-14deg); opacity: 0; }
+  60% { transform: translateY(0.08em) scale(1.06) rotate(3deg); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes gu-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -0.05em; }
+}
+@keyframes gu-jab-l {
+  0%, 62%, 100% { translate: 0 0; }
+  70% { translate: 1.6rem -0.2rem; }
+  78% { translate: 0 0; }
+}
+@keyframes gu-jab-r {
+  0%, 62%, 100% { translate: 0 0; }
+  70% { translate: -1.6rem -0.2rem; }
+  78% { translate: 0 0; }
+}
+@keyframes gu-breathe {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+@keyframes gu-fade-up {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes gu-wobble {
+  0%, 100% { rotate: 0deg; }
+  25% { rotate: -2deg; }
+  75% { rotate: 2deg; }
+}
+
+/* ───────────────────────────── mode (main menu) ───────────────────────────── */
+
+.gu-mode__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 1fr 1fr;
+  gap: 1.4rem;
+  padding: 0.5rem 0 0.75rem;
+}
+.gu-tile {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  gap: 0.6rem !important;
+  padding: 1.4rem 1.6rem !important;
+  border-radius: var(--r-xl) !important;
+  min-height: 0 !important;
+}
+.gu-tile .gu-btn__icon {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.4rem;
+}
+.gu-tile .gu-btn__icon .gu-icon {
+  width: 4rem;
+  height: 4rem;
+  stroke-width: 1.9;
+}
+.gu-tile .gu-btn__label {
+  font-size: 2.3rem;
+}
+.gu-tile .gu-btn__sub {
+  font-size: 1.1rem;
+}
+.gu-tile--primary {
+  --bg: var(--accent);
+  --fg: var(--paper);
+}
+.gu-tile--p2 {
+  --bg: var(--p1);
+  --fg: var(--paper);
+}
+.gu-tile--good {
+  --bg: var(--good);
+  --fg: var(--paper);
+}
+.gu-tile--plain {
+  --bg: var(--paper);
+  --fg: var(--ink);
+}
+.gu-tile::after {
+  content: '';
+  position: absolute;
+  right: -3rem;
+  top: -3rem;
+  width: 11rem;
+  height: 11rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  z-index: 0;
+}
+.gu-tile--plain::after {
+  background: rgba(43, 179, 163, 0.12);
+}
+
+.gu-profile-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.35rem;
+  border-radius: var(--pill);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--pop);
+}
+.gu-profile-chip__portrait {
+  --portrait-size: 4rem !important;
+  border: var(--line) solid var(--ink);
+}
+.gu-profile-chip__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.gu-profile-chip__name {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+.gu-profile-chip__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.gu-profile-chip__switch {
+  border-radius: var(--pill) !important;
+  --bg: var(--paper-2) !important;
+  --fg: var(--ink) !important;
+  --bd: var(--ink) !important;
+  --sh: var(--ink) !important;
+}
+
+/* ───────────────────────────── profiles ───────────────────────────── */
+
+.gu-profiles__grid {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  min-height: 0;
+}
+.gu-boxer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.8rem;
+  width: 15.5rem;
+}
+.gu-boxer-card__pick {
+  gap: 0.55rem !important;
+  padding: 1.25rem 1rem 1.1rem !important;
+}
+.gu-boxer-card__portrait {
+  --portrait-size: 11rem !important;
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.3rem 0 rgba(20, 24, 43, 0.25);
+}
+.gu-boxer-card__name {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  line-height: 1.05;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gu-boxer-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.gu-boxer-card__edit {
+  align-self: center;
+  min-width: 9rem;
+}
+.gu-boxer-card__note {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  opacity: 0.75;
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gu-pager {
+  flex: none;
+}
+.gu-pager__label {
+  margin: -0.5rem 0 0;
+  text-align: center;
+  font-weight: 800;
+  opacity: 0.8;
+}
+.gu-profiles__actions {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+}
+.gu-profiles__actions .gu-btn {
+  min-width: 17rem;
+}
+.gu-import {
+  align-self: center;
+  width: min(48rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: auto 0;
+}
+.gu-import__file {
+  display: none;
+}
+.gu-import__status {
+  margin: 0;
+  min-height: 1.4rem;
+  font-weight: 800;
+}
+.gu-import__status.is-error {
+  color: #c22c3d;
+}
+
+/* ───────────────────────────── profile editor ───────────────────────────── */
+
+.gu-editor__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 22rem 1fr;
+  gap: 1.6rem;
+}
+.gu-editor__left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 0;
+}
+.gu-editor__stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+.gu-editor__stage::after {
+  content: '';
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: -0.2rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  filter: blur(4px);
+  z-index: -1;
+}
+.gu-editor__portrait {
+  --portrait-size: 17rem !important;
+  border: 0.25rem solid var(--ink);
+  box-shadow: 0 0.5rem 0 var(--ink);
+}
+.gu-editor__left .gu-field__label {
+  color: rgba(255, 250, 240, 0.8);
+}
+.gu-editor__name {
+  font-size: 1.7rem;
+}
+.gu-editor__namerow {
+  display: flex;
+  gap: 0.6rem;
+}
+.gu-editor__namerow .gu-input {
+  flex: 1;
+  min-width: 0;
+}
+.gu-editor__rand {
+  width: 100%;
+}
+.gu-editor__right {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem 1.25rem;
+}
+.gu-editor__tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.gu-editor__grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+}
+.gu-editor__kitgrid {
+  margin-top: 0.25rem;
+}
+.gu-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+.gu-swatch {
+  width: 4.5rem;
+  height: 4.5rem;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  --bg: var(--swatch, var(--paper));
+  box-shadow: 0 0.3rem 0 var(--ink) !important;
+}
+.gu-swatch.is-selected {
+  --bg: var(--swatch, var(--paper));
+  box-shadow: 0 0.3rem 0 var(--ink), 0 0 0 0.3rem var(--paper), 0 0 0 0.55rem var(--ink) !important;
+}
+.gu-swatch.is-selected::before {
+  content: '';
+  position: absolute;
+  inset: 32%;
+  border-radius: 50%;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  z-index: 1;
+}
+.gu-swatch--none {
+  --bg: var(--paper-2);
+  background-image: repeating-linear-gradient(45deg, transparent 0 0.5rem, rgba(20, 24, 43, 0.12) 0.5rem 0.7rem) !important;
+}
+.gu-swatch__none {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+.gu-swatch--none.is-selected::before {
+  display: none;
+}
+.gu-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.gu-option {
+  justify-content: center !important;
+  text-align: center !important;
+}
+.gu-presets {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.6rem;
+}
+.gu-preset {
+  gap: 0.3rem !important;
+  padding: 0.5rem 0.3rem 0.45rem !important;
+  border-radius: var(--r-lg) !important;
+}
+.gu-preset__portrait {
+  --portrait-size: 4.5rem !important;
+  border: 0.15rem solid var(--ink);
+}
+.gu-preset__label {
+  font-size: 1.05rem;
+}
+
+/* ───────────────────────────── previews (camera setup, calibrate, lost) ───────────────────────────── */
+
+.gu-preview {
+  position: relative;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  border: 0.25rem solid var(--ink);
+  box-shadow: var(--pop-lg);
+  background: var(--ink);
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+}
+.gu-preview__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.gu-preview__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.gu-preview--halves .gu-preview__overlay::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  border-left: 0.2rem dashed rgba(255, 250, 240, 0.6);
+}
+.gu-preview__half {
+  position: absolute;
+  top: 0.85rem;
+  padding: 0.25rem 0.8rem;
+  border-radius: var(--pill);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--paper);
+  border: 0.15rem solid var(--ink);
+}
+.gu-preview__half--l {
+  left: 0.85rem;
+  background: var(--p1);
+}
+.gu-preview__half--r {
+  right: 0.85rem;
+  background: var(--p2);
+}
+.gu-preview__half.is-target {
+  animation: gu-pulse 1.1s ease-in-out infinite;
+}
+.gu-preview__waiting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  font-weight: 800;
+  font-size: 1.25rem;
+  text-align: center;
+  background: rgba(20, 24, 43, 0.7);
+}
+.gu-preview__waiting[hidden] {
+  display: none;
+}
+
+.gu-camsetup__body,
+.gu-calib__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.gu-camsetup__side,
+.gu-calib__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+.gu-camsetup__chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.gu-pchip {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.9rem 0.55rem 0.55rem;
+  border-radius: var(--r-md);
+  border: var(--line) solid var(--ink);
+  background: var(--paper-2);
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  min-height: 3.6rem;
+  transition: background var(--t-med);
+}
+.gu-pchip__tag {
+  flex: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--paper);
+  background: var(--p1);
+  border: 0.15rem solid var(--ink);
+}
+.gu-pchip--p2 .gu-pchip__tag {
+  background: var(--p2);
+}
+.gu-pchip__icon .gu-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.gu-pchip[data-state='ready'] {
+  background: #d6f5ef;
+}
+.gu-pchip[data-state='ready'] .gu-pchip__icon {
+  color: var(--good-dark);
+}
+.gu-pchip[data-state='missing'] {
+  background: #ffe2dd;
+}
+.gu-pchip[data-state='missing'] .gu-pchip__icon {
+  color: #c22c3d;
+}
+.gu-pchip[data-state='partial'] {
+  background: #fff1c9;
+}
+.gu-camsetup__error {
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: #ffe2dd;
+  border: var(--line) solid var(--ink);
+}
+.gu-camsetup__error[hidden] {
+  display: none;
+}
+.gu-camsetup__cam {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* calibrate */
+.gu-calib__now {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+.gu-calib__ringwrap {
+  position: relative;
+  flex: none;
+  width: 9rem;
+  height: 9rem;
+}
+.gu-calib__ringwrap .gu-ring {
+  width: 100%;
+  height: 100%;
+}
+.gu-calib__ringicon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+}
+.gu-calib__ringicon .gu-icon {
+  width: 3.4rem;
+  height: 3.4rem;
+}
+.gu-calib__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.1rem;
+  line-height: 1.05;
+}
+.gu-calib__msg {
+  margin: 0.45rem 0 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.35;
+  color: #3a4060;
+}
+.gu-calib__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.gu-calib__step {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--muted);
+}
+.gu-calib__step.is-now {
+  color: var(--ink);
+}
+.gu-calib__step.is-done {
+  color: var(--good-dark);
+}
+.gu-calib__bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  border: 0.15rem solid currentColor;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  flex: none;
+}
+.gu-calib__step.is-now .gu-calib__bullet {
+  background: var(--warn);
+  border-color: var(--ink);
+}
+.gu-calib__step.is-done .gu-calib__bullet {
+  background: var(--good);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.gu-calib__bullet .gu-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 3;
+}
+
+/* ───────────────────────────── VS card (vs / opponent) ───────────────────────────── */
+
+.gu-screen--vs,
+.gu-screen--opponent {
+  background: radial-gradient(ellipse 90% 80% at 50% 45%, rgba(27, 35, 64, 0.2) 0%, rgba(20, 24, 43, 0.75) 100%);
+}
+.gu-vs {
+  padding: 0;
+  display: block;
+  overflow: hidden;
+}
+.gu-vs__side {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.gu-vs__slab {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(-62deg, rgba(255, 255, 255, 0.07) 0 1.2rem, rgba(255, 255, 255, 0) 1.2rem 2.6rem),
+    radial-gradient(ellipse 70% 80% at 22% 40%, #6f9dff 0%, var(--p1) 45%, var(--p1-dark) 100%);
+  animation: gu-vs-in-l 0.42s var(--ease-out) both;
+}
+.gu-vs__side--p2 .gu-vs__slab {
+  background:
+    repeating-linear-gradient(62deg, rgba(255, 255, 255, 0.07) 0 1.2rem, rgba(255, 255, 255, 0) 1.2rem 2.6rem),
+    radial-gradient(ellipse 70% 80% at 78% 40%, #ff8a93 0%, var(--p2) 45%, var(--p2-dark) 100%);
+  animation-name: gu-vs-in-r;
+}
+.gu-vs__fighter {
+  position: absolute;
+  left: 25%;
+  top: 41%;
+  translate: -50% -50%;
+  animation: gu-vs-in-l 0.5s var(--ease-out) 0.05s both;
+}
+.gu-vs__side--p2 .gu-vs__fighter {
+  left: 75%;
+  animation-name: gu-vs-in-r;
+}
+.gu-vs__portrait {
+  --portrait-size: 19rem !important;
+  border-radius: 50%;
+  box-shadow: 0 0.6rem 0 var(--ink), 0 0 0 0.55rem rgba(255, 250, 240, 0.28);
+  animation: gu-float 4s ease-in-out 0.6s infinite;
+}
+.gu-vs__noportrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19rem;
+  height: 19rem;
+  border-radius: 50%;
+  background: rgba(255, 250, 240, 0.16);
+  border: var(--line) solid var(--ink);
+}
+.gu-vs__noportrait .gu-icon {
+  width: 7rem;
+  height: 7rem;
+}
+.gu-vs__plate {
+  position: absolute;
+  left: 4.5%;
+  bottom: 19%;
+  min-width: 20rem;
+  max-width: 34%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1.6rem 0.85rem;
+  border-radius: 1.3rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--pop-lg);
+  transform: skewX(-7deg);
+  animation: gu-vs-plate 0.45s var(--ease-pop) 0.4s both;
+}
+.gu-vs__plate > * {
+  transform: skewX(7deg);
+}
+.gu-vs__side--p2 .gu-vs__plate {
+  left: auto;
+  right: 4.5%;
+  align-items: flex-end;
+  text-align: right;
+  transform: skewX(7deg);
+}
+.gu-vs__side--p2 .gu-vs__plate > * {
+  transform: skewX(-7deg);
+}
+.gu-vs__plate::before {
+  content: '';
+  position: absolute;
+  left: -0.2rem;
+  top: -0.2rem;
+  bottom: -0.2rem;
+  width: 0.9rem;
+  border-radius: 1.3rem 0 0 1.3rem;
+  background: var(--p1);
+  border: var(--line) solid var(--ink);
+}
+.gu-vs__side--p2 .gu-vs__plate::before {
+  left: auto;
+  right: -0.2rem;
+  border-radius: 0 1.3rem 1.3rem 0;
+  background: var(--p2);
+}
+.gu-vs__name {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.gu-vs__nick {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--muted);
+}
+.gu-vs__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.15rem;
+}
+.gu-vs__rating {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.gu-vs__rating small {
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gu-vs__rating b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.9rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.gu-vs__rematch {
+  position: absolute;
+  top: -1.3rem;
+  right: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.85rem 0.25rem 0.6rem;
+  border-radius: var(--pill);
+  background: var(--warn);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.25rem 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  rotate: 3deg;
+  animation: gu-pop-in 0.45s var(--ease-pop) 0.75s both;
+}
+.gu-vs__rematch .gu-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.gu-vs__bolt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform-origin: 50% 0;
+  animation: gu-vs-bolt 0.32s var(--ease-out) 0.22s both, gu-vs-flicker 2.4s steps(1) 1s infinite;
+}
+.gu-vs__bolt-glow {
+  fill: rgba(255, 241, 214, 0.55);
+  filter: blur(6px);
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 2.2 1;
+}
+.gu-vs__bolt-band {
+  fill: var(--warn);
+  stroke: var(--ink);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.gu-vs__bolt-core {
+  fill: #fff7dc;
+}
+.gu-vs__medal {
+  position: absolute;
+  left: 53%;
+  top: 41%;
+  translate: -50% -50%;
+  width: 8.6rem;
+  height: 8.6rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 40% 32%, #3a4a80 0%, var(--ink) 72%);
+  border: 0.4rem solid var(--warn);
+  box-shadow: 0 0 0 0.25rem var(--ink), 0 0.6rem 0 0.25rem var(--ink), 0 0 2.5rem rgba(255, 201, 74, 0.55);
+  animation: gu-vs-medal 0.5s var(--ease-pop) 0.38s both;
+}
+.gu-vs__medal span {
+  font-family: var(--font-display);
+  font-size: 4.2rem;
+  line-height: 1;
+  color: var(--warn);
+  letter-spacing: -0.02em;
+  text-shadow: 0 0.07em 0 var(--accent), 0 0.12em 0 var(--ink);
+  rotate: -8deg;
+}
+.gu-vs__back {
+  position: absolute !important;
+  left: 1.6rem;
+  top: 1.4rem;
+  animation: gu-fade-up 0.4s var(--ease-out) 0.3s both;
+}
+.gu-vs__prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 2.2rem;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  animation: gu-fade-up 0.4s var(--ease-out) 0.3s both;
+}
+.gu-vs__go {
+  min-width: 17rem;
+  font-size: 2.4rem !important;
+}
+.gu-vs__hint {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 1rem;
+  border-radius: var(--pill);
+  background: rgba(20, 24, 43, 0.6);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: rgba(255, 250, 240, 0.92);
+}
+.gu-vs__hint .gu-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+@keyframes gu-vs-in-l {
+  from { opacity: 0; transform: translateX(-30%); }
+}
+@keyframes gu-vs-in-r {
+  from { opacity: 0; transform: translateX(30%); }
+}
+@keyframes gu-vs-bolt {
+  0% { opacity: 0; transform: scaleY(0); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gu-vs-flicker {
+  0%, 46%, 50%, 100% { opacity: 1; }
+  48% { opacity: 0.7; }
+}
+@keyframes gu-vs-medal {
+  0% { opacity: 0; scale: 2.6; rotate: -30deg; }
+  60% { opacity: 1; scale: 0.9; rotate: 6deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; }
+}
+@keyframes gu-vs-plate {
+  from { opacity: 0; translate: 0 2rem; }
+}
+@keyframes gu-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -0.5rem; }
+}
+
+/* ───────────────────────────── modals (pause, tracking lost) ───────────────────────────── */
+
+.gu-modal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.gu-modal__card {
+  position: relative;
+  width: min(36rem, 100%);
+  padding: 2.2rem 2rem 1.6rem;
+  border-radius: var(--r-xl);
+  background: var(--paper);
+  color: var(--ink);
+  border: 0.25rem solid var(--ink);
+  box-shadow: 0 0.7rem 0 var(--ink);
+  transition: transform var(--t-med) var(--ease-pop);
+}
+.gu-modal__card--wide {
+  width: min(66rem, 100%);
+  padding: 1.6rem 1.8rem 1.4rem;
+}
+.gu-modal__icon {
+  position: absolute;
+  top: -2.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4.6rem;
+  height: 4.6rem;
+  border-radius: 50%;
+  background: var(--warn);
+  border: 0.25rem solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--pop);
+}
+.gu-modal__icon .gu-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  stroke-width: 3;
+}
+.gu-modal__icon--warn {
+  position: static;
+  transform: none;
+  flex: none;
+  background: var(--accent);
+  color: var(--paper);
+}
+.gu-modal__title {
+  margin: 0.4rem 0 1.2rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 3rem;
+  line-height: 1;
+}
+.gu-modal__text {
+  margin: 0.3rem 0 0;
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  color: #3a4060;
+}
+.gu-modal__hint {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.gu-pause .gu-stack .gu-btn {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.gu-lost__head {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+.gu-lost__head .gu-modal__title {
+  margin: 0;
+  text-align: left;
+  font-size: 2.5rem;
+}
+.gu-lost__body {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 1.4rem;
+  margin: 1.2rem 0 1rem;
+  align-items: center;
+}
+.gu-lost__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.gu-lost__hold {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.gu-lost__ringwrap {
+  position: relative;
+  flex: none;
+  width: 7.5rem;
+  height: 7.5rem;
+}
+.gu-lost__ringwrap .gu-ring {
+  width: 100%;
+  height: 100%;
+}
+.gu-lost__ringicon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gu-lost__ringicon .gu-icon {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+.gu-lost__holdtext {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+.gu-lost__status {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--r-md);
+  font-weight: 800;
+  font-size: 1.15rem;
+  background: #ffe2dd;
+  border: var(--line) solid var(--ink);
+}
+.gu-lost__status[data-state='ok'] {
+  background: #d6f5ef;
+}
+
+/* ───────────────────────────── result (decision reveal / winner card) ───────────────────────────── */
+
+.gu-dec__head {
+  text-align: center;
+}
+.gu-dec__headline {
+  margin: 0.4rem 0 0.6rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 5.4rem;
+  line-height: 0.95;
+  color: var(--warn);
+  text-shadow: 0 0.06em 0 var(--ink), 0.04em 0.04em 0 var(--ink), -0.04em 0.04em 0 var(--ink), 0.04em -0.04em 0 var(--ink), -0.04em -0.04em 0 var(--ink), 0 0.11em 0 var(--accent), 0 0.15em 0 var(--ink);
+  animation: gu-slam 0.7s var(--ease-pop) both;
+}
+.gu-dec--loss .gu-dec__headline {
+  color: var(--peri);
+  text-shadow: 0 0.06em 0 var(--ink), 0.04em 0.04em 0 var(--ink), -0.04em 0.04em 0 var(--ink), 0.04em -0.04em 0 var(--ink), -0.04em -0.04em 0 var(--ink), 0 0.11em 0 var(--p1-dark), 0 0.15em 0 var(--ink);
+}
+.gu-dec--draw .gu-dec__headline {
+  color: var(--paper);
+}
+.gu-dec__method {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  animation: gu-fade-up 0.5s var(--ease-out) 0.35s both;
+}
+.gu-dec__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr minmax(24rem, 34rem) 1fr;
+  align-items: center;
+  gap: 2rem;
+  padding: 0 1rem;
+}
+.gu-dec__boxer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  animation: gu-pop-in 0.55s var(--ease-pop) 0.2s both;
+}
+.gu-dec__boxer .gu-portrait {
+  border-radius: 50%;
+  box-shadow: 0 0.5rem 0 var(--ink);
+}
+.gu-dec__boxer.is-winner .gu-portrait {
+  box-shadow: 0 0.5rem 0 var(--ink), 0 0 0 0.6rem rgba(255, 201, 74, 0.35), 0 0 3rem rgba(255, 201, 74, 0.5);
+  animation: gu-float 3.5s ease-in-out infinite;
+}
+.gu-dec__boxer.is-loser {
+  filter: saturate(0.55) brightness(0.85);
+}
+.gu-dec__crown {
+  position: absolute;
+  top: -1.9rem;
+  z-index: 2;
+  display: flex;
+  color: var(--ink);
+  animation: gu-pop-in 0.6s var(--ease-pop) 0.6s both;
+}
+.gu-dec__crown .gu-icon {
+  width: 3.4rem;
+  height: 3.4rem;
+  fill: var(--warn);
+  stroke-width: 1.8;
+}
+.gu-dec__noportrait {
+  display: flex;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 250, 240, 0.12);
+  border: var(--line) solid var(--paper);
+}
+.gu-dec__noportrait .gu-icon {
+  width: 4.5rem;
+  height: 4.5rem;
+}
+.gu-dec__name {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+  padding: 0.3rem 1.1rem 0.4rem;
+  border-radius: var(--pill);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.3rem 0 var(--ink);
+  background: var(--p1);
+  color: var(--paper);
+  text-shadow: 0 0.06em 0 var(--ink);
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gu-dec__name--p2 {
+  background: var(--p2);
+}
+.gu-dec__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.gu-dec__cardstitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+.gu-dec__cardstitle .gu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: var(--warn);
+}
+.gu-dec__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.gu-judge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--r-md);
+  border: var(--line) solid var(--ink);
+  background: var(--paper-2);
+  box-shadow: 0 0.25rem 0 var(--ink);
+  animation: gu-judge-in 0.45s var(--ease-pop) var(--delay, 0.5s) both;
+}
+.gu-judge.is-p1 {
+  background: linear-gradient(90deg, rgba(61, 123, 255, 0.22), var(--paper-2) 60%);
+}
+.gu-judge.is-p2 {
+  background: linear-gradient(270deg, rgba(255, 77, 94, 0.22), var(--paper-2) 60%);
+}
+.gu-judge__name {
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+.gu-judge__score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.gu-judge__n {
+  font-weight: 400;
+  color: var(--muted);
+}
+.gu-judge__n.is-best.gu-judge__n--p1 {
+  color: var(--p1-dark);
+}
+.gu-judge__n.is-best.gu-judge__n--p2 {
+  color: var(--p2-dark);
+}
+.gu-judge__dash {
+  color: var(--muted);
+}
+.gu-dec__legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 900;
+  font-size: 0.95rem;
+}
+.gu-dec__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.gu-dec__key::before {
+  content: '';
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  border: 0.12rem solid var(--ink);
+  background: var(--p1);
+}
+.gu-dec__key--p2::before {
+  background: var(--p2);
+}
+.gu-dec__vs {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, #3a4a80 0%, var(--ink) 72%);
+  border: 0.4rem solid var(--warn);
+  box-shadow: 0 0 0 0.25rem var(--ink), 0 0.5rem 0 0.25rem var(--ink);
+  animation: gu-pop-in 0.5s var(--ease-pop) 0.3s both;
+}
+.gu-dec__vs span {
+  font-family: var(--font-display);
+  font-size: 3.6rem;
+  color: var(--warn);
+  text-shadow: 0 0.07em 0 var(--accent), 0 0.12em 0 var(--ink);
+}
+@keyframes gu-judge-in {
+  0% { opacity: 0; transform: rotateX(80deg) scale(0.9); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gu-slam {
+  0% { opacity: 0; scale: 2.6; }
+  55% { opacity: 1; scale: 0.92; }
+  100% { opacity: 1; scale: 1; }
+}
+@keyframes gu-pop-in {
+  0% { opacity: 0; scale: 0.4; }
+  70% { opacity: 1; scale: 1.08; }
+  100% { opacity: 1; scale: 1; }
+}
+
+/* ───────────────────────────── results card (results / skill) ───────────────────────────── */
+
+.gu-results {
+  align-items: center;
+  gap: 1rem;
+}
+.gu-results__title {
+  margin: 0.3rem 0 0;
+  padding: 0.3rem 3rem 0.45rem;
+  border-radius: var(--pill);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--pop);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.4rem;
+  line-height: 1;
+  animation: gu-fade-up 0.4s var(--ease-out) both;
+}
+.gu-results__body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 76rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 2.4rem;
+}
+.gu-results__graph {
+  padding: 1rem 1.1rem 0.9rem;
+  animation: gu-vs-in-l 0.45s var(--ease-out) 0.1s both;
+}
+.gu-rgraph {
+  position: relative;
+}
+.gu-rgraph__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.gu-rgraph__prozone {
+  fill: rgba(255, 201, 74, 0.13);
+}
+.gu-rgraph__grid {
+  stroke: rgba(20, 24, 43, 0.1);
+  stroke-width: 2;
+}
+.gu-rgraph__proline {
+  stroke: var(--ink);
+  stroke-width: 3.5;
+}
+.gu-rgraph__area {
+  fill: rgba(61, 123, 255, 0.12);
+}
+.gu-rgraph__line,
+.gu-rgraph__seg {
+  fill: none;
+  stroke: var(--p1);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.gu-rgraph__seg {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+.gu-results--down .gu-rgraph__seg {
+  stroke: var(--accent);
+}
+.gu-rgraph__pt {
+  fill: var(--paper);
+  stroke: var(--p1);
+  stroke-width: 2.5;
+}
+.gu-rgraph__last {
+  fill: var(--warn);
+  stroke: var(--ink);
+  stroke-width: 3.5;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.gu-results.is-counted .gu-rgraph__last {
+  opacity: 1;
+  animation: gu-pop-in 0.4s var(--ease-pop), gu-dot-pulse 1.4s ease-in-out 0.5s infinite;
+}
+.gu-rgraph__prolabel {
+  position: absolute;
+  left: -0.4rem;
+  top: var(--y, 30%);
+  translate: -100% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 0.95;
+  color: var(--ink);
+  font-family: var(--font-display);
+}
+.gu-rgraph__prolabel b {
+  font-weight: 400;
+  font-size: 1.35rem;
+}
+.gu-rgraph__prolabel small {
+  font-size: 1rem;
+}
+.gu-results__graph .gu-rgraph {
+  margin-left: 3.6rem;
+}
+.gu-results__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
+  animation: gu-vs-in-r 0.45s var(--ease-out) 0.15s both;
+}
+.gu-results__plate {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.35rem 1.4rem 0.35rem 0.35rem;
+  border-radius: var(--pill);
+  background: var(--p1);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--pop);
+  max-width: 100%;
+}
+.gu-results__face {
+  --portrait-size: 4rem !important;
+  flex: none;
+  border-radius: 50%;
+  border: var(--line) solid var(--ink);
+}
+.gu-results__face--none {
+  display: flex;
+  width: 4rem;
+  height: 4rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  color: var(--ink);
+}
+.gu-results__name {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--paper);
+  text-shadow: 0 0.06em 0 var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.gu-results__proslot:empty {
+  display: none;
+}
+.gu-results__counter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.gu-results__num {
+  font-family: var(--font-display);
+  font-size: 6.2rem;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+  text-shadow: 0 0.06em 0 var(--ink), 0.035em 0.035em 0 var(--ink), -0.035em 0.035em 0 var(--ink), 0.035em -0.035em 0 var(--ink), -0.035em -0.035em 0 var(--ink), 0 0.1em 0 var(--p1);
+}
+.gu-results__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem 0.35rem 1rem;
+  border-radius: var(--pill);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--pop);
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  line-height: 1;
+  background: var(--good);
+  color: var(--paper);
+  text-shadow: 0 0.06em 0 var(--ink);
+  animation: gu-pop-in 0.5s var(--ease-pop) 0.55s both;
+}
+.gu-results__delta.is-down {
+  background: var(--accent);
+}
+.gu-results__delta.is-flat {
+  background: var(--paper-2);
+  color: var(--ink);
+  text-shadow: none;
+  padding-right: 1rem;
+}
+.gu-results__arrow {
+  display: inline-flex;
+}
+.gu-results__arrow .gu-icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  stroke-width: 3.2;
+}
+.gu-results.is-counted .gu-results__arrow {
+  animation: gu-arrow-up 0.6s var(--ease-pop);
+}
+.gu-results--down.is-counted .gu-results__arrow {
+  animation-name: gu-arrow-down;
+}
+.gu-results__moments {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+  min-height: 3rem;
+}
+.gu-results__togo {
+  margin: 0;
+  padding: 0.35rem 1rem;
+  border-radius: var(--pill);
+  background: rgba(20, 24, 43, 0.55);
+  font-weight: 900;
+  font-size: 1.15rem;
+  color: var(--paper);
+}
+.gu-moment {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 1.2rem 0.55rem 0.7rem;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--pop);
+  opacity: 0;
+  transform: scale(0.6);
+}
+.gu-moment.is-in {
+  opacity: 1;
+  transform: none;
+  animation: gu-stamp 0.55s var(--ease-pop);
+}
+.gu-moment__text {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.05;
+}
+.gu-moment__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.gu-moment__sub {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.gu-moment--pro {
+  background: linear-gradient(180deg, #fff1c4, var(--warn));
+}
+.gu-moment--lost {
+  background: var(--paper-2);
+}
+.gu-pro--lost {
+  filter: grayscale(1);
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+.gu-moment__glove {
+  display: flex;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-2);
+  border: var(--line) solid var(--ink);
+}
+.gu-moment__glove .gu-icon {
+  width: 2.3rem;
+  height: 2.3rem;
+  fill: var(--glove, var(--accent));
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+.gu-results__buttons {
+  width: 100%;
+  max-width: 76rem;
+  justify-content: center;
+  gap: 1.6rem;
+  margin-top: 0;
+  transition: opacity 0.35s var(--ease-out), translate 0.35s var(--ease-out);
+}
+.gu-results__buttons .gu-btn {
+  min-width: 15rem;
+  justify-content: center;
+}
+.gu-results__buttons.is-waiting {
+  opacity: 0;
+  translate: 0 1rem;
+  pointer-events: none;
+}
+.gu-results .gu-notice {
+  max-width: 56rem;
+}
+@keyframes gu-stamp {
+  0% { opacity: 0; transform: scale(1.8) rotate(-6deg); }
+  60% { opacity: 1; transform: scale(0.94) rotate(1deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gu-dot-pulse {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.25; }
+}
+@keyframes gu-arrow-up {
+  0% { transform: translate(-0.4rem, 0.4rem); opacity: 0.3; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes gu-arrow-down {
+  0% { transform: translate(-0.4rem, -0.4rem); opacity: 0.3; }
+  100% { transform: none; opacity: 1; }
+}
+
+/* ───────────────────────────── training select + result ───────────────────────────── */
+
+.gu-train__cards {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.4rem;
+}
+.gu-train__card {
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: 0.6rem !important;
+  padding: 1.3rem 1.4rem !important;
+}
+.gu-train__icon {
+  display: flex;
+  width: 4.6rem;
+  height: 4.6rem;
+  border-radius: 1.2rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--good);
+  color: var(--paper);
+  border: var(--line) solid var(--ink);
+}
+.gu-train__card::after {
+  content: '';
+  position: absolute;
+  right: -2.5rem;
+  bottom: -2.5rem;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 50%;
+  background: rgba(43, 179, 163, 0.1);
+  z-index: 0;
+}
+.gu-train__card--dodge::after {
+  background: rgba(255, 201, 74, 0.16);
+}
+.gu-train__card--mitts::after {
+  background: rgba(255, 107, 90, 0.12);
+}
+.gu-train__watermark {
+  position: absolute !important;
+  right: 1.2rem;
+  bottom: 3.6rem;
+  opacity: 0.12;
+}
+.gu-train__watermark .gu-icon {
+  width: 8rem;
+  height: 8rem;
+  stroke-width: 1.6;
+}
+.gu-train__card--dodge .gu-train__icon {
+  background: var(--warn);
+  color: var(--ink);
+}
+.gu-train__card--mitts .gu-train__icon {
+  background: var(--accent);
+}
+.gu-train__icon .gu-icon {
+  width: 2.9rem;
+  height: 2.9rem;
+}
+.gu-train__title {
+  font-size: 2.1rem;
+}
+.gu-train__rule {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  color: #3a4060;
+}
+.gu-train__best {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--muted);
+}
+.gu-train__players {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  padding: 0.9rem 1.25rem;
+  flex-wrap: wrap;
+}
+.gu-train__count {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.gu-train__slots {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.gu-train__slot {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.gu-train__slot .gu-cycler {
+  width: 16rem;
+}
+.gu-train__slot .gu-cycler__value {
+  font-size: 1.2rem;
+}
+.gu-train__slot--fixed {
+  align-items: center;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  border-radius: var(--pill);
+  background: var(--paper-2);
+  border: 0.15rem solid var(--paper-3);
+  align-self: center;
+}
+.gu-train__slot--fixed .gu-portrait {
+  --portrait-size: 3rem !important;
+}
+.gu-train__slotno {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-display);
+  flex: none;
+  margin-bottom: 1.25rem;
+}
+.gu-train__slot--fixed .gu-train__slotno {
+  margin-bottom: 0;
+}
+.gu-train__slotname {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.gu-tres__head {
+  text-align: center;
+}
+.gu-tres__kicker {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 900;
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+.gu-tres__kicker .gu-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.gu-tres__who {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 3rem;
+  line-height: 1;
+  text-shadow: 0 0.07em 0 var(--ink), 0.045em 0.045em 0 var(--ink), -0.045em 0.045em 0 var(--ink), 0.045em -0.045em 0 var(--ink), -0.045em -0.045em 0 var(--ink);
+}
+.gu-tres__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+}
+.gu-tres__main {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 2.5rem;
+  padding: 1.4rem 2.2rem;
+  min-width: 34rem;
+}
+.gu-tres__scorebox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.gu-tres__label {
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.gu-tres__score {
+  font-family: var(--font-display);
+  font-size: 6.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.gu-tres__newbest {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.9rem;
+  border-radius: var(--pill);
+  background: var(--warn);
+  border: var(--line) solid var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  box-shadow: var(--pop);
+  animation: gu-pop-in 0.5s var(--ease-pop) 1.2s both, gu-pulse 1.4s ease-in-out 2s infinite;
+}
+.gu-tres__newbest .gu-icon {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: var(--ink);
+  stroke: none;
+}
+.gu-tres__medal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.gu-tres__medal.has-medal .gu-medal {
+  animation: gu-medal-in 0.8s var(--ease-pop) 1s both, gu-swing 3s ease-in-out 1.8s infinite;
+  transform-origin: 50% 0;
+}
+.gu-tres__medalname {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+.gu-tres__facts {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.gu-tres__facts p {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.gu-tres__facts .gu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--good-dark);
+}
+.gu-tres__table {
+  min-width: 26rem;
+  padding: 1rem 1.25rem;
+}
+.gu-rank {
+  width: 100%;
+  border-collapse: collapse;
+}
+.gu-rank td {
+  padding: 0.35rem 0.4rem;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.gu-rank tr + tr {
+  border-top: 0.1rem solid var(--paper-3);
+}
+.gu-rank tr.is-current {
+  background: #fff1c9;
+}
+.gu-rank__place {
+  font-family: var(--font-display);
+  font-size: 1.5rem !important;
+  width: 2.5rem;
+  text-align: center;
+}
+.gu-rank__who {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.gu-rank__who .gu-portrait {
+  --portrait-size: 2.5rem !important;
+}
+.gu-rank__score {
+  font-family: var(--font-display);
+  font-size: 1.45rem !important;
+  text-align: right;
+}
+.gu-rank__medal {
+  width: 2.5rem;
+  text-align: center;
+}
+.gu-rank__nomedal {
+  color: var(--muted);
+}
+.gu-medal {
+  display: block;
+  overflow: visible;
+}
+.gu-medal-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+@keyframes gu-medal-in {
+  0% { transform: translateY(-3rem) scale(0.4) rotate(-25deg); opacity: 0; }
+  70% { transform: translateY(0.3rem) scale(1.08) rotate(6deg); opacity: 1; }
+  100% { transform: none; }
+}
+@keyframes gu-swing {
+  0%, 100% { rotate: -3deg; }
+  50% { rotate: 3deg; }
+}
+@keyframes gu-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+
+/* ───────────────────────────── records ───────────────────────────── */
+
+.gu-records__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1.5rem;
+}
+.gu-records__picker {
+  min-width: 18rem;
+}
+.gu-records__picker .gu-cycler__label {
+  color: rgba(255, 250, 240, 0.8);
+}
+.gu-records__skill,
+.gu-records__train {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  overflow: hidden;
+}
+.gu-records__who {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.gu-records__who .gu-portrait {
+  --portrait-size: 4.5rem !important;
+  border: var(--line) solid var(--ink);
+}
+.gu-records__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1;
+}
+.gu-records__skillnow {
+  margin: 0.3rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--muted);
+}
+.gu-graph {
+  position: relative;
+  flex: 1;
+  min-height: 9rem;
+  border-radius: var(--r-md);
+  background: var(--paper-2);
+  border: 0.15rem solid var(--paper-3);
+  overflow: hidden;
+}
+.gu-graph__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.gu-graph--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+  padding: 1rem;
+}
+.gu-graph--empty .gu-icon {
+  width: 3rem;
+  height: 3rem;
+}
+.gu-graph--empty p {
+  margin: 0;
+}
+.gu-graph__prozone {
+  fill: rgba(255, 201, 74, 0.14);
+}
+.gu-graph__proline {
+  stroke: var(--warn);
+  stroke-width: 3;
+  stroke-dasharray: 9 7;
+}
+.gu-graph__prolabel {
+  font-family: var(--font-display);
+  font-size: 15px;
+  fill: #b98a12;
+}
+.gu-graph__area {
+  fill: rgba(61, 123, 255, 0.14);
+}
+.gu-graph__line {
+  fill: none;
+  stroke: var(--p1);
+  stroke-width: 4.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.gu-graph__pt {
+  fill: var(--paper);
+  stroke: var(--p1);
+  stroke-width: 3;
+}
+.gu-graph__last {
+  fill: var(--warn);
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.gu-graph__lastlabel {
+  font-family: var(--font-display);
+  font-size: 18px;
+  fill: var(--ink);
+}
+.gu-tallies {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+}
+.gu-tally {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.45rem;
+  border-radius: var(--r-md);
+  border: 0.15rem solid var(--ink);
+  background: var(--paper-2);
+}
+.gu-tally__n {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1.05;
+}
+.gu-tally__label {
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.gu-tally--win {
+  background: #d6f5ef;
+}
+.gu-tally--loss {
+  background: #ffe2dd;
+}
+.gu-tally--ko {
+  background: #fff1c9;
+}
+.gu-records__versus {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+.gu-records__versus .gu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.gu-trainrow {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr auto 3.2rem;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.35rem 0;
+}
+.gu-trainrow + .gu-trainrow {
+  border-top: 0.1rem solid var(--paper-3);
+}
+.gu-trainrow__icon {
+  display: flex;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.8rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-2);
+  border: 0.15rem solid var(--paper-3);
+}
+.gu-trainrow__icon .gu-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+.gu-trainrow__name {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.gu-trainrow__best {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+}
+.gu-trainrow__medal {
+  display: flex;
+  justify-content: center;
+}
+.gu-trainrow__nomedal {
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.1;
+}
+.gu-bouts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.gu-bout {
+  display: grid;
+  grid-template-columns: 2.1rem 1fr auto 3.6rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+}
+.gu-bout__res {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.6rem;
+  font-family: var(--font-display);
+  color: var(--paper);
+  background: var(--muted);
+  border: 0.15rem solid var(--ink);
+}
+.gu-bout--win .gu-bout__res {
+  background: var(--good);
+}
+.gu-bout--loss .gu-bout__res {
+  background: var(--accent);
+}
+.gu-bout__opp {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gu-bout__how {
+  color: var(--muted);
+}
+.gu-bout__delta {
+  text-align: right;
+  font-family: var(--font-display);
+}
+.gu-bout__delta.is-up {
+  color: var(--good-dark);
+}
+.gu-bout__delta.is-down {
+  color: #c22c3d;
+}
+
+/* ───────────────────────────── settings + help ───────────────────────────── */
+
+.gu-settings__panel,
+.gu-help__panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem 1.4rem 1.2rem;
+}
+.gu-settings__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.gu-setting {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) minmax(0, 1.25fr);
+  gap: 1.5rem;
+  align-items: center;
+  padding: 0.15rem 0;
+}
+.gu-setting + .gu-setting {
+  border-top: 0.1rem solid var(--paper-3);
+  padding-top: 0.4rem;
+}
+.gu-setting__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.gu-setting__label {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+}
+.gu-setting__desc {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.gu-setting__control {
+  display: flex;
+  justify-content: flex-end;
+}
+.gu-setting__cam {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+.gu-setting__cam .gu-cycler {
+  width: 100%;
+}
+.gu-setting__static {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.gu-settings__saved {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1rem;
+  max-width: 22rem;
+  text-align: right;
+}
+.gu-settings__saved[data-kind='ok'] {
+  color: var(--mint);
+}
+.gu-settings__saved[data-kind='warn'] {
+  color: var(--warn);
+}
+
+/* RV-VISUAL-03: help cards a little tighter, so no tab clips a card at 1024×768 … 2560×1080 */
+.gu-help__panel {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+.gu-help__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem 1rem;
+}
+.gu-help__grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.gu-helpcard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.75rem 1.1rem 0.8rem;
+  border-radius: var(--r-lg);
+  background: var(--paper-2);
+  border: 0.15rem solid var(--paper-3);
+}
+.gu-helpcard__icon {
+  display: flex;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 1rem;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--paper);
+  border: 0.15rem solid var(--ink);
+}
+.gu-helpcard:nth-child(3n + 2) .gu-helpcard__icon {
+  background: var(--good);
+}
+.gu-helpcard:nth-child(3n) .gu-helpcard__icon {
+  background: var(--p1);
+}
+.gu-helpcard__icon .gu-icon {
+  width: 2rem;
+  height: 2rem;
+}
+.gu-helpcard__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.45rem;
+}
+.gu-helpcard__text {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.38;
+  color: #3a4060;
+}
+.gu-keys__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.gu-keys__table th,
+.gu-keys__table td {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  font-size: 1.1rem;
+}
+.gu-keys__table tr + tr {
+  border-top: 0.1rem solid var(--paper-3);
+}
+.gu-keys__table th {
+  font-weight: 800;
+  color: var(--muted);
+  width: 45%;
+}
+kbd {
+  display: inline-block;
+  min-width: 2.2rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 0.55rem;
+  background: var(--paper);
+  border: 0.15rem solid var(--ink);
+  box-shadow: 0 0.2rem 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  text-align: center;
+}
+.gu-keys__keys {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+.gu-keys__word {
+  font-weight: 800;
+  color: var(--muted);
+}
+.gu-keys__p2 {
+  margin: 0.8rem 0 0;
+  font-weight: 700;
+  color: var(--muted);
+}
+/* Q5: punches | defence side by side, so every key (power E, lean back X, lean in W …) fits unscrolled */
+.gu-keys__cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 2.2rem;
+  align-items: start;
+}
+@media (max-aspect-ratio: 1/1) {
+  .gu-keys__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ───────────────────────────── toasts + loading ───────────────────────────── */
+
+.gu-toasts {
+  position: absolute;
+  left: 50%;
+  bottom: 1.6rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 40;
+  pointer-events: none;
+  width: min(56rem, 92vw);
+}
+.gu-toast {
+  padding: 0.75rem 1.4rem;
+  border-radius: var(--pill);
+  background: var(--ink);
+  color: var(--paper);
+  border: var(--line) solid var(--paper);
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(1rem) scale(0.96);
+  transition: opacity 0.25s var(--ease-out), transform 0.3s var(--ease-pop);
+}
+.gu-toast.is-in {
+  opacity: 1;
+  transform: none;
+}
+.gu-toast.is-out {
+  opacity: 0;
+  transform: translateY(0.5rem);
+}
+.gu-toast--good {
+  background: var(--good);
+  border-color: var(--ink);
+}
+.gu-toast--warn {
+  background: var(--warn);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.gu-toast--error {
+  background: var(--p2);
+  border-color: var(--ink);
+}
+.gu-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 24, 43, 0.55);
+  pointer-events: auto;
+}
+.gu-loading[hidden] {
+  display: none;
+}
+.gu-loading__card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1.8rem;
+  border-radius: var(--r-lg);
+  background: var(--ink);
+  border: var(--line) solid var(--paper);
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+
+/* ───────────────────────────── HUD ───────────────────────────── */
+/* research/mechanics.md §5 — function only, our own graphics: name plates in the bottom corners, our round
+   clock with three lamps at the bottom centre, text calls in the middle. Health is drawn in 3D (render/). */
+
+.gu-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-display);
+  color: var(--paper);
+}
+.gu-hud[hidden] {
+  display: none;
+}
+.gu-hud__panels {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.gu-hud__panel {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* live group: name plates + round clock; hidden while view.clockVisible is false */
+.gu-hud__live {
+  position: absolute;
+  left: 1.6rem;
+  right: 1.6rem;
+  bottom: 1.25rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 1.4rem;
+  transition: opacity 0.3s var(--ease-out), translate 0.3s var(--ease-out);
+}
+.gu-hud__live.is-hidden {
+  opacity: 0;
+  translate: 0 1.4rem;
+}
+
+/* name plates */
+.gu-plate {
+  --side: var(--p1);
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.gu-plate--p2 {
+  --side: var(--p2);
+}
+.gu-plate--right {
+  flex-direction: row-reverse;
+  justify-self: end;
+}
+.gu-plate__face {
+  flex: none;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--side);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.22rem 0 var(--ink);
+  overflow: hidden;
+  display: flex;
+}
+.gu-plate__img {
+  --portrait-size: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.gu-plate__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  min-width: 0;
+  padding-bottom: 0.3rem;
+}
+.gu-plate--right .gu-plate__main {
+  align-items: flex-end;
+}
+.gu-plate__row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0 0.3rem;
+}
+.gu-plate--right .gu-plate__row {
+  flex-direction: row-reverse;
+}
+.gu-plate__name {
+  min-width: 0;
+  max-width: 15rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--paper);
+  text-shadow: 0 0.07em 0 var(--ink), 0.05em 0.05em 0 var(--ink), -0.05em 0.05em 0 var(--ink), 0.05em -0.05em 0 var(--ink), -0.05em -0.05em 0 var(--ink);
+}
+.gu-plate__line {
+  display: block;
+  width: 16rem;
+  max-width: 100%;
+  height: 0.62rem;
+  border-radius: var(--pill);
+  background: var(--side);
+  border: 0.15rem solid var(--ink);
+  box-shadow: 0 0.18rem 0 rgba(20, 24, 43, 0.7);
+}
+.gu-plate__track {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  border: 0.15rem solid var(--ink);
+  background: var(--good);
+  flex: none;
+}
+.gu-plate__track[hidden] {
+  display: none;
+}
+.gu-plate__track[data-state='weak'] {
+  background: var(--warn);
+}
+.gu-plate__track[data-state='lost'] {
+  background: var(--p2);
+  animation: gu-blink 0.7s steps(2) infinite;
+}
+
+/* round clock: lamps (done / now / next) above M:SS */
+.gu-clock {
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.32rem;
+  min-width: 9.2rem;
+  padding: 0.5rem 1.1rem 0.45rem;
+  border-radius: 1.3rem 1.3rem 1.1rem 1.1rem;
+  background: linear-gradient(180deg, #2a3358 0%, var(--ink) 70%);
+  border: var(--line) solid var(--paper);
+  box-shadow: 0 0 0 0.2rem var(--ink), 0 0.4rem 0 0.2rem rgba(20, 24, 43, 0.75);
+}
+.gu-clock__lamps {
+  display: flex;
+  gap: 0.55rem;
+}
+.gu-clock__lamp {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  border: 0.15rem solid rgba(255, 250, 240, 0.55);
+  background: rgba(255, 250, 240, 0.06);
+}
+.gu-clock__lamp.is-done {
+  background: var(--warn);
+  border-color: var(--warn);
+  box-shadow: inset 0 -0.16rem 0 rgba(20, 24, 43, 0.3);
+}
+.gu-clock__lamp.is-now {
+  background: var(--accent);
+  border-color: #ffd3cc;
+  box-shadow: 0 0 0.55rem 0.12rem rgba(255, 107, 90, 0.85);
+  animation: gu-lamp 1.4s ease-in-out infinite;
+}
+.gu-clock__time {
+  font-size: 2.85rem;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+/* versus: two halves, each with its own plates + clock */
+.gu-hud--versus .gu-hud__divider {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 0.375rem;
+  transform: translateX(-50%);
+  background: var(--ink);
+  box-shadow: 0 0 0 0.15rem rgba(255, 250, 240, 0.85);
+}
+.gu-hud--versus .gu-hud__live {
+  left: 0.9rem;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  gap: 0.6rem;
+}
+.gu-hud--versus .gu-plate__face {
+  width: 2.7rem;
+  height: 2.7rem;
+}
+.gu-hud--versus .gu-plate__name {
+  font-size: 1.15rem;
+  max-width: 9rem;
+}
+.gu-hud--versus .gu-plate__line {
+  width: 9rem;
+  height: 0.5rem;
+}
+.gu-hud--versus .gu-clock {
+  min-width: 6.6rem;
+  padding: 0.35rem 0.8rem 0.35rem;
+}
+.gu-hud--versus .gu-clock__lamp {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+.gu-hud--versus .gu-clock__time {
+  font-size: 2.1rem;
+}
+.gu-hud__tag {
+  position: absolute;
+  left: 0.9rem;
+  top: 0.9rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.9rem;
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.3rem 0 var(--ink);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--paper);
+  background: var(--p1);
+}
+.gu-hud__tag--p2 {
+  left: auto;
+  right: 0.9rem;
+  background: var(--p2);
+}
+/* FLOWS-05: the outro is one full-screen view — no split-screen divider or P1/P2 tags over the replay,
+   the win banner or the winner shot (hud.js toggles .is-outro on the HUD root) */
+.gu-hud.is-outro .gu-hud__divider,
+.gu-hud.is-outro .gu-hud__tag {
+  display: none;
+}
+
+/* ── text calls ── */
+.gu-hud__calls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.gu-call {
+  --fill: var(--paper);
+  --c: var(--accent);
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+  text-align: center;
+  animation: gu-call-in 0.42s var(--ease-pop) both;
+}
+.gu-call.is-out {
+  animation: gu-call-out 0.26s ease-in both !important;
+}
+.gu-call__text,
+.gu-call__half,
+.gu-call__letter {
+  color: var(--fill);
+  line-height: 0.95;
+  text-shadow:
+    0 0.05em 0 var(--ink), 0.04em 0.04em 0 var(--ink), -0.04em 0.04em 0 var(--ink),
+    0.04em -0.04em 0 var(--ink), -0.04em -0.04em 0 var(--ink), 0 0.1em 0 var(--c), 0 0.14em 0 var(--ink);
+}
+.gu-call__text {
+  font-size: 7rem;
+}
+.gu-call__sub {
+  padding: 0.3rem 1.2rem;
+  border-radius: var(--pill);
+  background: var(--ink);
+  border: var(--line) solid var(--paper);
+  font-size: 1.5rem;
+  color: var(--paper);
+}
+/* "Round N" / "Final round": a plate that sweeps through */
+.gu-call--round {
+  top: 41%;
+  animation: gu-plate-in 0.5s var(--ease-out) both;
+}
+.gu-call--round.is-out {
+  animation: gu-plate-out 0.3s ease-in both !important;
+}
+.gu-call__plate {
+  display: inline-flex;
+  padding: 0.55rem 3.4rem 0.8rem;
+  border-radius: 1.6rem;
+  background: linear-gradient(180deg, #6b9cff 0%, var(--p1) 55%, var(--p1-dark) 100%);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.5rem 0 var(--ink), 0 0 0 0.45rem rgba(255, 250, 240, 0.22);
+  transform: skewX(-9deg);
+}
+.gu-call--round .gu-call__text {
+  font-size: 5.2rem;
+  transform: skewX(9deg);
+  --c: var(--p1-dark);
+}
+.gu-call--round.is-final .gu-call__plate {
+  background: linear-gradient(180deg, #ff9387 0%, var(--accent) 55%, var(--accent-dark) 100%);
+}
+.gu-call--round.is-final .gu-call__text {
+  --fill: #fff4cf;
+  --c: var(--accent-dark);
+}
+.gu-call--round .gu-call__sub {
+  font-size: 1.2rem;
+  animation: gu-fade-up 0.4s var(--ease-out) 0.3s both;
+}
+/* "Fight!" */
+.gu-call--fight {
+  animation: gu-fight-in 0.5s var(--ease-pop) both;
+}
+.gu-call--fight .gu-call__text {
+  font-size: 9rem;
+  --fill: var(--warn);
+}
+/* "Down!": two halves sweep in from opposite sides and merge */
+.gu-call--down {
+  top: 40%;
+  animation: none;
+}
+.gu-call__word {
+  position: relative;
+  display: inline-block;
+  animation: gu-merge 0.34s var(--ease-pop) 0.28s both;
+}
+.gu-call__half {
+  display: block;
+  font-size: 9.5rem;
+  --fill: var(--warn);
+}
+.gu-call__half--top {
+  clip-path: inset(-30% -20% 50% -20%);
+  animation: gu-half-l 0.3s var(--ease-out) both;
+}
+.gu-call__half--bottom {
+  position: absolute;
+  left: 0;
+  top: 0;
+  clip-path: inset(50% -20% -30% -20%);
+  animation: gu-half-r 0.3s var(--ease-out) both;
+}
+/* count numbers: pop, scale, fade (the HUD retires each after ~0.5 s). Near the centre (47%, as in
+   the reference): the knockdown wide shot puts the downed fighter in the upper third, above it. */
+.gu-call--count {
+  top: 47%;
+  animation: gu-count-pop 0.5s var(--ease-out) both;
+}
+.gu-call--count .gu-call__text {
+  font-size: 12.5rem;
+  --fill: #ffe08a;
+}
+.gu-call--count.is-out {
+  animation: gu-count-out 0.24s ease-in both !important;
+}
+/* "KO": the letters fly in from opposite corners and bounce */
+.gu-call--ko {
+  top: 40%;
+  flex-direction: row;
+  gap: 0.4rem;
+  animation: none;
+}
+.gu-call__letter {
+  position: relative;
+  display: inline-block;
+  font-size: 14rem;
+  --fill: var(--warn);
+}
+.gu-call__letter--k {
+  animation: gu-ko-k 0.5s var(--ease-pop) both, gu-ko-bob 0.42s ease-in-out 0.55s infinite alternate;
+}
+.gu-call__letter--o {
+  animation: gu-ko-o 0.5s var(--ease-pop) 0.12s both, gu-ko-bob 0.42s ease-in-out 0.76s infinite alternate;
+}
+.gu-call__burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36rem;
+  height: 36rem;
+  translate: -50% -50%;
+  z-index: -1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 209, 102, 0.55) 0deg 9deg, rgba(255, 209, 102, 0) 9deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 0 26%, transparent 66%);
+  mask: radial-gradient(circle, #000 0 26%, transparent 66%);
+  animation: gu-burst-in 0.5s var(--ease-out) 0.1s both, gu-rotate 10s linear infinite;
+}
+/* "Time!", "Decision", training READY? / GO! */
+.gu-call--time .gu-call__text {
+  font-size: 7.5rem;
+  --fill: var(--warn);
+}
+.gu-call--decision .gu-call__text {
+  font-size: 6.5rem;
+  --c: var(--good-dark);
+}
+.gu-call--result .gu-call__text {
+  font-size: 6rem;
+  --fill: var(--warn);
+}
+.gu-call--ready .gu-call__text {
+  font-size: 7rem;
+  --c: var(--p1);
+}
+.gu-call--ready .gu-call__sub,
+.gu-call--time .gu-call__sub {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 1.2rem;
+  white-space: normal;
+  max-width: 46rem;
+}
+.gu-hud--versus .gu-call__text {
+  font-size: 5.5rem;
+}
+.gu-hud--versus .gu-call--count .gu-call__text {
+  font-size: 9.5rem;
+}
+.gu-hud--versus .gu-call__half {
+  font-size: 7rem;
+}
+.gu-hud--versus .gu-call__letter {
+  font-size: 10rem;
+}
+
+/* get-up hint: small and subtle, for a downed human only */
+.gu-getup {
+  --k: 0;
+  position: absolute;
+  left: 50%;
+  bottom: 2.2rem;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.2rem 0.65rem;
+  border-radius: 1.1rem;
+  background: rgba(20, 24, 43, 0.55);
+  border: 0.15rem solid rgba(255, 250, 240, 0.35);
+  animation: gu-fade-up 0.35s var(--ease-out) both;
+}
+.gu-getup[hidden] {
+  display: none;
+}
+/* "Please keep your hands visible" (camera play): the game has lost the hands; the tracking-lost card follows
+   about a second later if they stay out of view (src/ui/hud.js, app.js _hudExtras) */
+.gu-handswarn {
+  position: absolute;
+  left: 50%;
+  top: 5.5rem;
+  translate: -50% 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1.3rem 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--warn);
+  color: var(--ink);
+  border: 0.2rem solid var(--ink);
+  box-shadow: 0 0.35rem 0 rgba(20, 24, 43, 0.55);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: gu-fade-up 0.25s var(--ease-out) both, gu-handswarn-pulse 1.1s ease-in-out 0.25s infinite;
+}
+.gu-handswarn[hidden] {
+  display: none;
+}
+/* clear of the shared camera picture (versus, top centre) and the drill timer */
+.gu-hud--versus .gu-handswarn {
+  top: 9.8rem;
+}
+.gu-hud--training .gu-handswarn {
+  top: 8.6rem;
+}
+.gu-handswarn .gu-icon {
+  width: 2rem;
+  height: 2rem;
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+@keyframes gu-handswarn-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.gu-reduced-motion .gu-handswarn {
+  animation: none;
+}
+.gu-getup.is-versus[data-side='p1'] {
+  left: 25%;
+}
+.gu-getup.is-versus[data-side='p2'] {
+  left: 75%;
+}
+.gu-getup__hint {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  color: var(--paper);
+  text-shadow: 0 0.08em 0 var(--ink);
+}
+.gu-getup__bar {
+  position: relative;
+  width: 12.5rem;
+  height: 0.6rem;
+  border-radius: var(--pill);
+  background: rgba(255, 250, 240, 0.18);
+  overflow: hidden;
+}
+.gu-getup__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  transform: scaleX(var(--k));
+  background: linear-gradient(90deg, var(--warn), var(--accent));
+  transition: transform 0.12s linear;
+}
+.gu-getup.is-full .gu-getup__fill {
+  background: linear-gradient(90deg, #49d2b6, var(--good));
+}
+
+/* webcam PiP: top right (versus: top centre, training: bottom left) */
+.gu-hud__pip {
+  position: absolute;
+  right: 1.4rem;
+  top: 1.4rem;
+  width: 15rem;
+  aspect-ratio: 16 / 9;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  border: var(--line) solid var(--paper);
+  box-shadow: 0 0.3rem 0 var(--ink);
+  background: var(--ink);
+  opacity: 0.92;
+}
+.gu-hud__pip[hidden] {
+  display: none;
+}
+.gu-hud__pipcanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.gu-hud--versus .gu-hud__pip {
+  right: auto;
+  left: 50%;
+  top: 0.9rem;
+  translate: -50% 0;
+  width: 13rem;
+}
+.gu-hud--training .gu-hud__pip {
+  top: auto;
+  right: auto;
+  left: 1.4rem;
+  bottom: 1.4rem;
+  width: 17rem;
+}
+
+/* ── first-bout tutorial card (ARCHITECTURE §6.9): framed panel at the lower left, directly above the
+   2-line caption band (D17 / VISUAL-13; the reference footage 0:15–1:05 puts it there). A bottom-aligned
+   column, so the card always sits right on the band however many lines the caption wraps to. ── */
+.gu-hud__tutorial {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.gu-tut {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  /* the card's z-index (above the band's fade) stays inside the tutorial: menus and the pause screen,
+     which come later in the page, still cover the whole HUD */
+  isolation: isolate;
+}
+.gu-tut.is-out {
+  animation: gu-call-out 0.26s ease-in both;
+}
+.gu-tut__card {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  /* overlaps the band's transparent top fade, so the card's edge lands where the band turns dark */
+  margin: 0 0 -0.7rem 1.6rem;
+  width: 19rem;
+  max-width: calc(100% - 3.2rem);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  border-radius: 1.4rem;
+  box-shadow: var(--pop-lg);
+  overflow: hidden;
+}
+.gu-tut__card.is-new {
+  animation: gu-tut-in 0.45s var(--ease-pop) both;
+}
+.gu-tut__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.9rem 0.6rem 1rem;
+  background: var(--p1);
+  color: var(--paper);
+  border-bottom: var(--line) solid var(--ink);
+}
+.gu-tut__title {
+  font-size: 1.55rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 0.07em 0 var(--ink);
+}
+.gu-tut__pips {
+  display: flex;
+  gap: 0.28rem;
+  flex: none;
+}
+.gu-tut__pip {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  border: 0.12rem solid var(--ink);
+  background: rgba(255, 250, 240, 0.35);
+}
+.gu-tut__pip.is-done {
+  background: var(--warn);
+}
+.gu-tut__pip.is-now {
+  background: var(--paper);
+  box-shadow: 0 0 0 0.12rem var(--paper);
+}
+.gu-tut__art {
+  height: 11rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 62%, #ffffff 0%, #eaf1ff 68%, #dfe8ff 100%);
+}
+.gu-tut__svg {
+  width: 12rem;
+  height: 10.6rem;
+  overflow: visible;
+}
+.gu-tut__svg--punch-head g,
+.gu-tut__svg--punch-body g {
+  animation: gu-tut-jab 1.1s ease-in-out infinite;
+}
+.gu-tut__svg--dodge g:nth-child(2) {
+  animation: gu-tut-sway 1.6s ease-in-out infinite;
+  transform-origin: 60px 108px;
+}
+.gu-tut__progress {
+  height: 0.7rem;
+  background: var(--paper-3);
+  border-top: 0.15rem solid var(--ink);
+}
+.gu-tut__card:not(.has-progress) .gu-tut__progress {
+  display: none;
+}
+.gu-tut__fill {
+  display: block;
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(var(--k, 0));
+  background: linear-gradient(90deg, #49d2b6, var(--good));
+  transition: transform 0.2s linear;
+}
+.gu-tut__check {
+  position: absolute;
+  right: 0.8rem;
+  top: 3.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  background: var(--good);
+  color: var(--paper);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.2rem 0 var(--ink);
+  opacity: 0;
+  scale: 0.4;
+  transition: opacity 0.2s, scale 0.3s var(--ease-pop);
+}
+.gu-tut__check .gu-icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  stroke-width: 3.2;
+}
+.gu-tut__card.is-complete .gu-tut__check {
+  opacity: 1;
+  scale: 1;
+}
+/* VISUAL-12: a step change resets the check and the bar instantly (hud.js TutorialCard.set) */
+.gu-tut__card.is-resetting .gu-tut__fill,
+.gu-tut__card.is-resetting .gu-tut__check {
+  transition: none;
+}
+.gu-tut__band {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.6rem 2rem 1.1rem;
+  background: linear-gradient(180deg, rgba(20, 24, 43, 0) 0%, rgba(20, 24, 43, 0.72) 30%, rgba(20, 24, 43, 0.86) 100%);
+  animation: gu-fade-up 0.4s var(--ease-out) both;
+}
+.gu-tut__caption {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 1.55rem;
+  line-height: 1.25;
+  color: var(--paper);
+  text-shadow: 0 0.08em 0 var(--ink);
+}
+.gu-tut__line {
+  display: block;
+}
+.gu-tut__skip {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: rgba(255, 250, 240, 0.7);
+}
+.gu-tut__skip[hidden] {
+  display: none;
+}
+
+/* ── bout outro (Ev.RENDER_OUTRO): win banner + Replay tag; own layer, survives hud.hide() ── */
+.gu-outro {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-display);
+  overflow: hidden;
+}
+.gu-win {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38%;
+  height: 12rem;
+  translate: 0 -50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gu-win.is-out {
+  animation: gu-call-out 0.45s ease-in both;
+}
+.gu-win__band {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 250, 240, 0) 0%, rgba(255, 250, 240, 0.82) 26%, rgba(255, 246, 225, 0.9) 50%, rgba(255, 250, 240, 0.82) 74%, rgba(255, 250, 240, 0) 100%);
+  transform-origin: left center;
+  animation: gu-band-in 0.45s var(--ease-out) both;
+}
+.gu-win__streak {
+  position: absolute;
+  top: 12%;
+  bottom: 12%;
+  left: 0;
+  width: 26%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+  animation: gu-streak 1.5s ease-in-out 0.35s infinite;
+}
+.gu-win__text {
+  position: relative;
+  max-width: 94vw;
+  font-size: clamp(3.4rem, calc(150vw / var(--len, 8)), 9rem);
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  color: var(--warn);
+  text-shadow:
+    0 0.05em 0 var(--ink), 0.04em 0.04em 0 var(--ink), -0.04em 0.04em 0 var(--ink),
+    0.04em -0.04em 0 var(--ink), -0.04em -0.04em 0 var(--ink), 0 0.1em 0 var(--orange), 0 0.15em 0 var(--ink);
+  animation: gu-win-in 0.6s var(--ease-pop) 0.12s both;
+}
+.gu-win--loss .gu-win__text,
+.gu-win--draw .gu-win__text {
+  color: var(--paper);
+  text-shadow:
+    0 0.05em 0 var(--ink), 0.04em 0.04em 0 var(--ink), -0.04em 0.04em 0 var(--ink),
+    0.04em -0.04em 0 var(--ink), -0.04em -0.04em 0 var(--ink), 0 0.1em 0 var(--p1), 0 0.15em 0 var(--ink);
+}
+/* the KO replay tag: our own marker (VISUAL-08 / RELEASE-06) — a round coral badge with a replay arrow that
+   turns backwards like a rewinding reel, then the word, in our dark pill at the bottom left */
+.gu-replay {
+  position: absolute;
+  left: 1.6rem;
+  bottom: 1.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem 1.2rem 0.3rem 0.35rem;
+  border-radius: var(--pill);
+  background: rgba(20, 24, 43, 0.78);
+  border: 0.15rem solid rgba(255, 250, 240, 0.65);
+  animation: gu-fade-up 0.35s var(--ease-out) both;
+}
+.gu-replay.is-out {
+  animation: gu-call-out 0.26s ease-in both;
+}
+.gu-replay__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--paper);
+  border: 0.15rem solid var(--ink);
+  box-shadow: 0 0.14rem 0 var(--ink), inset 0 -0.18rem 0 rgba(20, 24, 43, 0.22);
+}
+.gu-replay__mark .gu-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  stroke-width: 3;
+  animation: gu-replay-turn 1.6s var(--ease-out) infinite;
+}
+.gu-replay__text {
+  font-size: 1.55rem;
+  line-height: 1;
+  color: var(--paper);
+  letter-spacing: 0.03em;
+}
+
+/* training HUD (our own mode: timer, score, streak, stacked popups) */
+.gu-thud__top {
+  position: absolute;
+  left: 1.4rem;
+  right: 1.4rem;
+  top: 1.1rem;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 1.2rem;
+}
+.gu-thud__who {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-self: start;
+  height: 4.5rem;
+  margin-left: 0.6rem;
+  padding: 0 1.5rem 0 0.4rem;
+  border-radius: var(--pill);
+  background: rgba(255, 250, 240, 0.96);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.35rem 0 var(--ink);
+  color: var(--ink);
+}
+.gu-thud__portrait {
+  --side: var(--p1);
+  width: 4.6rem !important;
+  height: 4.6rem !important;
+  margin: -0.6rem 0.2rem -0.6rem -0.9rem !important;
+}
+.gu-thud__whotext {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.gu-thud__name {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.gu-thud__turn {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.gu-thud__timebox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.gu-thud__activity {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.95rem 0.6rem;
+  border-radius: 1rem 1rem 0 0;
+  background: var(--good);
+  border: var(--line) solid var(--ink);
+  border-bottom: 0;
+  color: var(--paper);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+.gu-thud__icon .gu-icon {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+.gu-thud__time {
+  min-width: 8.4rem;
+  margin-top: -0.35rem;
+  padding: 0.25rem 1.2rem 0.35rem;
+  border-radius: 1.6rem;
+  background: var(--ink);
+  border: var(--line) solid var(--paper);
+  text-align: center;
+  font-size: 3.1rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.gu-thud__timebox.is-low .gu-thud__time {
+  color: var(--warn);
+  border-color: var(--warn);
+  animation: gu-pulse 0.5s ease-in-out infinite;
+}
+.gu-thud__scorebox {
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0.4rem 1.3rem 0.5rem;
+  border-radius: 1.4rem;
+  background: rgba(255, 250, 240, 0.96);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.35rem 0 var(--ink);
+  color: var(--ink);
+  min-width: 11rem;
+}
+.gu-thud__scorebox.is-bump {
+  animation: gu-bump 0.3s var(--ease-pop);
+}
+.gu-thud__lbl {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+.gu-thud__score {
+  font-size: 3.2rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.gu-thud__combo {
+  margin-top: 0.2rem;
+  padding: 0.15rem 0.7rem;
+  border-radius: var(--pill);
+  background: var(--pink);
+  color: var(--paper);
+  border: 0.15rem solid var(--ink);
+  font-size: 1.1rem;
+}
+.gu-thud__combo[hidden] {
+  display: none;
+}
+.gu-thud__combo.is-bump {
+  animation: gu-bump 0.3s var(--ease-pop);
+}
+.gu-hud__popups {
+  position: absolute;
+  inset: 0;
+}
+/* popups sit in fixed slots per lane (no overlapping texts): 'opp' stacks down from 28%, 'self' up from 76% */
+.gu-popup {
+  --base: 28%;
+  --step: 8.5%;
+  position: absolute;
+  left: 50%;
+  top: calc(var(--base) + var(--slot, 0) * var(--step));
+  translate: -50% -50%;
+  font-size: 2.4rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--paper);
+  --c: var(--ink);
+  text-shadow:
+    0 0.06em 0 var(--ink), 0.05em 0.05em 0 var(--ink), -0.05em 0.05em 0 var(--ink),
+    0.05em -0.05em 0 var(--ink), -0.05em -0.05em 0 var(--ink), 0 0.12em 0 var(--c);
+  animation: gu-popup 0.95s var(--ease-out) both;
+}
+.gu-popup--self {
+  --base: 76%;
+  --step: -8.5%;
+}
+.gu-popup--big {
+  font-size: 3.2rem;
+  animation-duration: 1.25s;
+}
+.gu-popup--counter {
+  color: var(--warn);
+  --c: var(--accent);
+}
+.gu-popup--hit {
+  color: var(--paper);
+}
+.gu-popup--good {
+  color: #7ff0d9;
+  --c: var(--good-dark);
+}
+.gu-popup--miss {
+  color: #d6dae8;
+  font-size: 1.8rem;
+}
+.gu-popup--bad {
+  color: #ff9a8f;
+  --c: var(--p2-dark);
+}
+
+/* profile editor: special glove colours (progression.GLOVE_UNLOCKS) */
+.gu-swatch.is-special::after {
+  content: '';
+  position: absolute;
+  inset: 0.25rem;
+  border-radius: inherit;
+  border: 0.15rem dashed rgba(255, 250, 240, 0.9);
+  pointer-events: none;
+}
+.gu-swatch.is-locked {
+  filter: saturate(0.25) brightness(0.8);
+}
+.gu-swatch__lock,
+.gu-swatch__star {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  color: var(--paper);
+  text-shadow: 0 0.08em 0 var(--ink);
+}
+.gu-swatch__lock .gu-icon,
+.gu-swatch__star .gu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  fill: var(--paper);
+}
+.gu-swatch__lock b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.gu-swatch__star .gu-icon {
+  fill: var(--warn);
+}
+.gu-editor__unlocknote {
+  margin: 0.7rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--muted);
+}
+.gu-editor__unlocknote .gu-icon {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+/* HUD keyframes */
+@keyframes gu-call-in {
+  0% { opacity: 0; scale: 2.2; }
+  60% { opacity: 1; scale: 0.94; }
+  100% { opacity: 1; scale: 1; }
+}
+@keyframes gu-call-out {
+  to { opacity: 0; scale: 0.8; }
+}
+@keyframes gu-plate-in {
+  0% { opacity: 0; transform: translateX(-60vw); }
+  70% { opacity: 1; transform: translateX(1.2rem); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gu-plate-out {
+  to { opacity: 0; transform: translateX(55vw); }
+}
+@keyframes gu-fight-in {
+  0% { opacity: 0; scale: 0.2; rotate: -12deg; }
+  55% { opacity: 1; scale: 1.25; rotate: 4deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; }
+}
+@keyframes gu-half-l {
+  from { transform: translateX(-60vw); }
+  to { transform: none; }
+}
+@keyframes gu-half-r {
+  from { transform: translateX(60vw); }
+  to { transform: none; }
+}
+@keyframes gu-merge {
+  0% { scale: 1; }
+  40% { scale: 1.12; }
+  100% { scale: 1; }
+}
+@keyframes gu-count-pop {
+  0% { opacity: 0; scale: 0.35; }
+  30% { opacity: 1; scale: 1.18; }
+  55% { scale: 1; }
+  100% { opacity: 1; scale: 1.06; }
+}
+@keyframes gu-count-out {
+  to { opacity: 0; scale: 1.4; }
+}
+@keyframes gu-ko-k {
+  0% { opacity: 0; transform: translate(-48vw, -34vh) rotate(-40deg) scale(1.6); }
+  70% { opacity: 1; transform: translate(0.6rem, 0.4rem) rotate(6deg) scale(0.92); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gu-ko-o {
+  0% { opacity: 0; transform: translate(48vw, 34vh) rotate(40deg) scale(1.6); }
+  70% { opacity: 1; transform: translate(-0.6rem, -0.4rem) rotate(-6deg) scale(0.92); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gu-ko-bob {
+  from { transform: translateY(0) rotate(0deg); }
+  to { transform: translateY(-0.9rem) rotate(-3deg); }
+}
+@keyframes gu-burst-in {
+  from { opacity: 0; scale: 0.3; }
+}
+@keyframes gu-rotate {
+  to { rotate: 360deg; }
+}
+@keyframes gu-lamp {
+  0%, 100% { box-shadow: 0 0 0.35rem 0.05rem rgba(255, 107, 90, 0.6); }
+  50% { box-shadow: 0 0 0.75rem 0.2rem rgba(255, 107, 90, 0.95); }
+}
+@keyframes gu-tut-in {
+  0% { opacity: 0; transform: translateX(-3rem) scale(0.92); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gu-tut-jab {
+  0%, 60%, 100% { transform: none; }
+  25% { transform: translateX(3px); }
+}
+@keyframes gu-tut-sway {
+  0%, 100% { transform: rotate(-17deg); }
+  50% { transform: rotate(17deg); }
+}
+@keyframes gu-band-in {
+  from { opacity: 0; transform: scaleX(0); }
+}
+@keyframes gu-streak {
+  0% { transform: translateX(-30vw); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(110vw); opacity: 0; }
+}
+@keyframes gu-win-in {
+  0% { opacity: 0; scale: 2.4; letter-spacing: 0.3em; }
+  60% { opacity: 1; scale: 0.95; }
+  100% { opacity: 1; scale: 1; letter-spacing: 0.02em; }
+}
+@keyframes gu-replay-turn {
+  0% { rotate: 0deg; }
+  70%, 100% { rotate: -360deg; }
+}
+@keyframes gu-popup {
+  0% { opacity: 0; transform: scale(0.3); }
+  18% { opacity: 1; transform: scale(1.18); }
+  32% { transform: scale(1); }
+  75% { opacity: 1; transform: translateY(-0.5rem); }
+  100% { opacity: 0; transform: translateY(-0.9rem) scale(0.96); }
+}
+@keyframes gu-blink {
+  50% { opacity: 0.25; }
+}
+@keyframes gu-bump {
+  0% { scale: 1; }
+  40% { scale: 1.12; }
+  100% { scale: 1; }
+}
+
+/* ───────────────────────────── responsive (smaller / narrower windows) ───────────────────────────── */
+
+@media (max-aspect-ratio: 4/3) {
+  .gu-mode__grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+  .gu-camsetup__body,
+  .gu-calib__body,
+  .gu-lost__body {
+    grid-template-columns: 1fr;
+  }
+  .gu-help__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ───────────────────────────── reduced motion ───────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .gu-ui *,
+  .gu-ui *::before,
+  .gu-ui *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+.gu-reduced-motion *,
+.gu-reduced-motion *::before,
+.gu-reduced-motion *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 1ms !important;
+}
+.gu-reduced-motion .gu-call__burst,
+.gu-reduced-motion .gu-win__streak {
+  display: none;
+}
+
+/* ==== hud-flows fixes ==== */
+/* Owner: hudflows (fix pass). Sound-off badge (D13), small-screen gate (D14), tracking-lost camera error
+   (FLOWS-02), calibration tips (INPUT-M2), training-result "End session" (FLOWS-08). (The hand pointer's
+   styles — D1/D2 — went with the pointer on 2026-11-08.) */
+
+/* RV-FLOWS-04: the pause card while the picture is gone — why the bout stopped; Continue unavailable */
+.gu-pause__why {
+  margin: -0.4rem 0 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-md, 0.9rem);
+  background: var(--paper-2);
+  border: 0.15rem solid var(--paper-3);
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+.gu-pause.is-picture-lost .gu-pause__why {
+  background: var(--warn);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.gu-pause__why[hidden] {
+  display: none;
+}
+.gu-btn[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: saturate(0.35);
+}
+.gu-btn[aria-disabled='true']:hover {
+  transform: none;
+  box-shadow: 0 0.375rem 0 var(--sh);
+}
+/* …on short screens (landscape phones, ≤ 480 px tall) the card, icon included, still fits: a little tighter, the
+   line smaller, and while it shows, the hint under the buttons gives way to it */
+@media (max-height: 480px) {
+  .gu-pause .gu-modal__card {
+    padding-top: 1.8rem;
+    padding-bottom: 1.1rem;
+  }
+  .gu-pause .gu-modal__title {
+    margin-bottom: 0.8rem;
+  }
+  .gu-pause__why {
+    margin: -0.3rem 0 0.6rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+  .gu-pause__why:not([hidden]) ~ .gu-modal__hint {
+    display: none;
+  }
+}
+
+/* D13: sound needs a real click or key press (browser autoplay rules) */
+.gu-soundoff {
+  position: absolute;
+  left: 50%;
+  top: 0.3rem;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: calc(100vw - 1.5rem);
+  padding: 0.28rem 0.85rem 0.28rem 0.6rem;
+  border-radius: var(--pill);
+  background: rgba(20, 24, 43, 0.86);
+  color: var(--paper);
+  border: 0.14rem solid rgba(255, 250, 240, 0.85);
+  font-weight: 800;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.3);
+}
+.gu-soundoff[hidden] {
+  display: none;
+}
+.gu-soundoff__icon {
+  display: flex;
+  color: var(--warn);
+}
+.gu-soundoff__icon .gu-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.gu-soundoff__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* D14: phones, narrow windows and tall portrait screens get a card instead of a squeezed layout */
+.gu-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: auto;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 40%, rgba(45, 58, 102, 0.96) 0%, rgba(20, 24, 43, 0.99) 100%);
+}
+.gu-gate[hidden] {
+  display: none;
+}
+.gu-gate__card {
+  width: min(30rem, 100%);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.6rem 1.4rem 1.5rem;
+  border-radius: var(--r-xl);
+  background: var(--paper);
+  color: var(--ink);
+  border: 0.25rem solid var(--ink);
+  box-shadow: 0 0.6rem 0 var(--ink);
+  text-align: center;
+}
+.gu-gate__icon {
+  width: 3.8rem;
+  height: 3.8rem;
+  border-radius: 50%;
+  background: var(--warn);
+  border: 0.22rem solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gu-gate__icon .gu-icon {
+  width: 2rem;
+  height: 2rem;
+  stroke-width: 3;
+}
+.gu-gate__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.1rem;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.gu-gate__text {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  color: #3a4060;
+}
+.gu-gate .gu-btn {
+  max-width: 100%;
+}
+
+/* FLOWS-02: the camera stopped while tracking was lost — say so, offer Try again */
+.gu-lost__camerr {
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: var(--warn);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  box-shadow: 0 0.25rem 0 var(--ink);
+}
+.gu-lost__camerr[hidden],
+.gu-lost__hold[hidden],
+.gu-lost__retry[hidden] {
+  display: none;
+}
+.gu-lost__camhelp {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+/* INPUT-M2: the calibration's concrete advice after a while in a step */
+.gu-calib__tip {
+  margin: 0.55rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-md);
+  background: #fff1c9;
+  border: 0.14rem solid var(--ink);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.gu-calib__tip[hidden] {
+  display: none;
+}
+
+/* FLOWS-08: "End session" sits next to "Try again" on a mid-session training result */
+.gu-tres__end {
+  margin-left: 0.6rem;
+}
+/* ==== end hud-flows fixes ==== */

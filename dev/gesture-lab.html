@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glove Up · Gesture Lab</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="/src/ui/fonts.css" />
+  <style>
+    :root {
+      --ink: #14182b; --ink-2: #1b2140; --ink-3: #242b52; --line: rgba(255, 250, 240, 0.09);
+      --paper: #fffaf0; --muted: #a9b1d3; --faint: #6f789e;
+      --accent: #ff6b5a; --good: #2bb3a3; --warn: #ffc94a; --p1: #3d7bff; --p2: #ff4d5e;
+      --display: 'Lilita One', 'Arial Rounded MT Bold', system-ui, sans-serif;
+      --body: 'Nunito', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background: radial-gradient(1200px 700px at 30% -10%, #26306a 0%, var(--ink) 60%) fixed, var(--ink);
+      color: var(--paper); font: 14px/1.35 var(--body); overflow: hidden;
+    }
+    button, select, input { font: inherit; color: inherit; }
+    .app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+    header { display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: rgba(20, 24, 43, 0.65); backdrop-filter: blur(6px); flex-wrap: wrap; }
+    h1 { font: 24px/1 var(--display); letter-spacing: 0.5px; margin: 0; white-space: nowrap; }
+    h1 span { color: var(--accent); }
+    .badge { font-weight: 900; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; background: var(--ink-3); color: var(--muted); border: 1px solid var(--line); }
+    .badge.live { background: rgba(255, 77, 94, 0.18); color: #ffb3ba; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-left: auto; }
+    .field { display: flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+    select, input[type=number] { background: var(--ink-3); border: 1px solid var(--line); border-radius: 9px; padding: 5px 8px; font-weight: 700; font-size: 13px; text-transform: none; letter-spacing: 0; }
+    input[type=number] { width: 70px; }
+    input[type=range] { width: 90px; accent-color: var(--accent); }
+    .btn { border-radius: 11px; padding: 7px 14px; font-weight: 900; cursor: pointer; background: var(--ink-3); border: 1px solid var(--line); }
+    .btn.primary { background: var(--accent); border-color: transparent; color: #fff; box-shadow: 0 6px 18px rgba(255, 107, 90, 0.35); }
+    .btn:hover { filter: brightness(1.12); }
+    main { display: grid; grid-template-columns: minmax(360px, 0.9fr) minmax(480px, 1.6fr); gap: 14px; padding: 14px; min-height: 0; }
+    .col { display: grid; gap: 14px; min-height: 0; }
+    .left { grid-template-rows: auto 1fr; }
+    .right { grid-template-rows: 1fr 1fr 0.8fr; }
+    .card { background: rgba(27, 33, 64, 0.85); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; min-height: 0; position: relative; overflow: hidden; }
+    .card h2 { font: 15px/1 var(--display); letter-spacing: 0.4px; margin: 2px 0 8px; color: var(--paper); display: flex; align-items: center; gap: 8px; white-space: nowrap; min-width: 0; }
+    .card h2 small { font: 700 11px/1 var(--body); color: var(--faint); letter-spacing: 0.04em; text-transform: uppercase; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .view { aspect-ratio: 4 / 3; padding: 0; }
+    .view canvas { width: 100%; height: 100%; display: block; border-radius: 16px; }
+    .notice { position: absolute; inset: auto 12px 12px 12px; background: rgba(20, 24, 43, 0.92); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; color: var(--paper); font-weight: 700; }
+    .notice b { color: var(--warn); }
+    .plot canvas { width: 100%; height: calc(100% - 26px); display: block; }
+    .readout { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; align-content: start; overflow: auto; }
+    .kv { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; border-bottom: 1px dashed rgba(255, 250, 240, 0.06); padding: 2px 0; }
+    .kv span:first-child { color: var(--muted); font-size: 12px; }
+    .kv span:last-child { font-variant-numeric: tabular-nums; }
+    .bar { position: relative; height: 8px; border-radius: 6px; background: var(--ink-3); margin: 3px 0 6px; overflow: hidden; }
+    .bar i { position: absolute; top: 0; bottom: 0; background: var(--good); border-radius: 6px; }
+    .bar.center i { background: var(--warn); }
+    .bar.center::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.35); }
+    .wide { grid-column: 1 / -1; }
+    .log { grid-column: 1 / -1; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 150px; overflow: auto; background: rgba(20, 24, 43, 0.6); border-radius: 10px; padding: 6px 8px; }
+    .log div { white-space: nowrap; }
+    .log .punch { color: #ffd5cf; }
+    .log .pause { color: var(--warn); }
+    .log .rej { color: var(--faint); }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; font-weight: 700; color: var(--muted); margin-left: auto; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+    .timeline { position: absolute; left: 12px; right: 12px; bottom: 8px; }
+    .timeline input { width: 100%; accent-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Glove Up · <span>Gesture Lab</span></h1>
+      <span class="badge" id="mode">synthetic</span>
+      <div class="controls" id="synthControls">
+        <label class="field">Scenario <select id="scenario"></select></label>
+        <label class="field">Seed <input id="seed" type="number" value="1" min="1" /></label>
+        <label class="field">Distance <input id="distance" type="number" step="0.1" value="2.0" min="1.2" max="3.0" /></label>
+        <label class="field">Cam height <input id="camHeight" type="number" step="0.1" value="1.0" min="0.6" max="1.9" /></label>
+        <label class="field">Punch ms <input id="punchMs" type="number" step="10" value="200" min="120" max="350" /></label>
+        <label class="field">Noise <input id="noise" type="number" step="0.25" value="1" min="0" max="2" /></label>
+        <label class="field">Lead hand <select id="lead"><option>left</option><option>right</option></select></label>
+        <button class="btn" id="randomize" title="Random player &amp; camera">Random player</button>
+      </div>
+      <div class="controls">
+        <label class="field">Sensitivity <input id="sens" type="range" min="0" max="1" step="0.05" value="0.5" /></label>
+        <label class="field">Speed <select id="speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+        <button class="btn primary" id="play">Pause</button>
+        <button class="btn" id="restart">Restart</button>
+      </div>
+    </header>
+    <main>
+      <div class="col left">
+        <div class="card view"><canvas id="view" width="640" height="480"></canvas><div class="notice" id="notice" hidden></div></div>
+        <div class="card"><h2>Control state <small id="fps"></small></h2><div class="readout" id="readout"></div></div>
+      </div>
+      <div class="col right">
+        <div class="card plot"><h2>Left hand <small>features · thresholds · events</small>
+          <span class="legend"><span><i style="background:#ff6b5a"></i>extension X</span><span><i style="background:#2bb3a3"></i>drive (×onset)</span><span><i style="background:#3d7bff"></i>wrist height</span><span><i style="background:#ffc94a"></i>stroke</span><span><i style="background:#6f789e"></i>cooldown</span></span></h2><canvas id="plotL"></canvas></div>
+        <div class="card plot"><h2>Right hand <small>▲ performed (synthetic truth) · │ recognised · × rejected</small></h2><canvas id="plotR"></canvas></div>
+        <div class="card plot"><h2>Body <small>lean x / duck y / forward z · guard amount · activity</small></h2><canvas id="plotB"></canvas>
+          <div class="timeline" id="timelineWrap"><input id="timeline" type="range" min="0" max="1000" value="0" /></div></div>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="./gesture-lab.js"></script>
+</body>
+</html>
