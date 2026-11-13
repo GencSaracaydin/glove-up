@@ -345,6 +345,7 @@ export class UI {
     const reduced = !!this._settings.reducedMotion;
     this.el.classList.toggle('gu-reduced-motion', reduced);
     this.hud.setPip(this._settings.showSkeleton !== false);
+    this.hud.setPipLarge(this._settings.pipLarge === true);
     this.hud.setMirror(this._settings.mirror !== false);
     this.hud.setReducedMotion(reduced);
     try { if (this._settings.volumes) this.audio?.setVolume?.(this._settings.volumes); } catch (e) { console.warn('[ui] setVolume failed', e); }
@@ -382,7 +383,7 @@ export class UI {
       const s = this.storage?.settings?.();
       if (s) return s;
     } catch { /* fall through */ }
-    return { reducedMotion: false, showSkeleton: true, mirror: true, volumes: { master: 0.8, sfx: 0.9, music: 0.6, voice: 0.9 } };
+    return { reducedMotion: false, showSkeleton: true, pipLarge: false, mirror: true, volumes: { master: 0.8, sfx: 0.9, music: 0.6, voice: 0.9 } };
   }
 
   _top() { return this._stack[this._stack.length - 1] || null; }

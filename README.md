@@ -193,7 +193,8 @@ arrow keys. In single player the P2 keys drive P1 too. With
   **Full** or **Lite** is used as chosen and never changed. Settings saved before Auto existed had Full
   only because it was the default; they now get Auto (a saved Lite stays Lite).
 - **Play:** punch sensitivity (applied at once and after a reload), the webcam
-  picture-in-picture with your skeleton, keyboard assist and reduced motion.
+  picture-in-picture with your skeleton (and **Bigger camera picture** to enlarge it, e.g. for recording a
+  video), keyboard assist and reduced motion.
 - **Sound:** master, effects, music and announcer volumes.
 
 Changes apply immediately and are saved.

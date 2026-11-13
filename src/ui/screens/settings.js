@@ -104,6 +104,7 @@ export default {
           build: () => h('div', { class: 'gu-settings__list' },
             row('Punch sensitivity', 'Lower if you throw punches by accident; raise if punches are missed', slider({ label: 'Punch sensitivity', value: s.sensitivity, min: 0, max: 1, step: 0.1, format: (v) => (v < 0.35 ? 'Steady' : v > 0.65 ? 'Twitchy' : 'Normal'), onChange: (v, final) => { if (final) change('sensitivity', v); } })),
             row('Camera picture-in-picture', 'A small webcam view with your skeleton while you box', toggle({ label: 'Camera picture-in-picture', value: s.showSkeleton, onChange: (v) => change('showSkeleton', v) })),
+            row('Bigger camera picture', 'Makes that webcam view larger — handy when you record a video', toggle({ label: 'Bigger camera picture', value: s.pipLarge === true, onChange: (v) => change('pipLarge', v) })),
             row('Keyboard assist', 'Keys also punch and guard while the camera is on', toggle({ label: 'Keyboard assist', value: s.keyboardAssist, onChange: (v) => change('keyboardAssist', v) })),
             row('Reduced motion', 'Calmer screen effects and transitions', toggle({ label: 'Reduced motion', value: s.reducedMotion, onChange: (v) => change('reducedMotion', v) }))),
         },

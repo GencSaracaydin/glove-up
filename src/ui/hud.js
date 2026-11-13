@@ -572,6 +572,7 @@ export class Hud {
     this.mode = 'single';
     this.visible = false;
     this._pipEnabled = true;
+    this._pipLarge = false;
     this._mirror = true;
     this._offs = [];
     this._tracking = [null, null];
@@ -620,7 +621,7 @@ export class Hud {
       h('span', { class: 'gu-getup__bar' }, h('span', { class: 'gu-getup__fill' })));
     this.handsWarn = h('div', { class: 'gu-handswarn', role: 'status', hidden: true }, icon('glove'), h('span', { class: 'gu-handswarn__text' }));
     this.tutHost = h('div', { class: 'gu-hud__tutorial' });
-    this.pip = h('div', { class: 'gu-hud__pip', hidden: true }, h('canvas', { class: 'gu-hud__pipcanvas' }));
+    this.pip = h('div', { class: `gu-hud__pip${this._pipLarge ? ' is-large' : ''}`, hidden: true }, h('canvas', { class: 'gu-hud__pipcanvas' }));
     if (kind === 'training') this._buildTraining(opts);
     else this._buildMatch();
     this.el.append(this.getUp, this.calls, this.tutHost, this.pip, this.handsWarn);
@@ -645,6 +646,8 @@ export class Hud {
 
   /** Webcam PiP on/off (settings.showSkeleton). */
   setPip(on) { this._pipEnabled = !!on; if (this.pip && !on) this.pip.hidden = true; }
+  /** A bigger webcam PiP (settings.pipLarge; handy when recording a demo). */
+  setPipLarge(on) { this._pipLarge = !!on; this.pip?.classList?.toggle('is-large', this._pipLarge); }
   setMirror(on) { this._mirror = !!on; }
   /** Reduced motion (CSS does the work; kept for API compatibility). */
   setReducedMotion(on) { this._reduced = !!on; }

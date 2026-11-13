@@ -4049,6 +4049,25 @@ kbd {
   bottom: 1.4rem;
   width: 17rem;
 }
+/* Settings → Play → "Bigger camera picture" (settings.pipLarge): about 1.7× wider (2.8× the area) than the small
+   view, e.g. for recording a demo */
+.gu-hud__pip.is-large {
+  width: 25rem;
+  opacity: 1;
+}
+.gu-hud--versus .gu-hud__pip.is-large {
+  width: 22rem;
+}
+.gu-hud--training .gu-hud__pip.is-large {
+  width: 25rem;
+}
+/* the hands warning moves below a big picture at the top (single: top right; versus: top centre) */
+.gu-hud__pip.is-large:not([hidden]) ~ .gu-handswarn {
+  top: 16.4rem;
+}
+.gu-hud--versus .gu-hud__pip.is-large:not([hidden]) ~ .gu-handswarn {
+  top: 14.8rem;
+}
 
 /* ── first-bout tutorial card (ARCHITECTURE §6.9): framed panel at the lower left, directly above the
    2-line caption band (D17 / VISUAL-13; the reference footage 0:15–1:05 puts it there). A bottom-aligned

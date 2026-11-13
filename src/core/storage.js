@@ -160,6 +160,7 @@ export const STORAGE_LIMITS = Object.freeze({
  * @property {{master:number, sfx:number, music:number, voice:number}} volumes   0..1 each
  * @property {boolean} mirror          mirror webcam previews
  * @property {boolean} showSkeleton    webcam picture-in-picture with skeleton during play
+ * @property {boolean} pipLarge        that picture bigger (e.g. for recording a demo)
  * @property {boolean} keyboardAssist  keyboard punches/guard also work in camera mode
  * @property {'camera'|'keyboard'} inputMode
  * @property {boolean} reducedMotion
@@ -218,6 +219,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   volumes: Object.freeze({ master: 0.8, sfx: 0.9, music: 0.6, voice: 0.9 }),
   mirror: true,
   showSkeleton: true,
+  pipLarge: false,
   keyboardAssist: false,
   inputMode: 'camera',
   reducedMotion: false,
@@ -553,6 +555,7 @@ export function sanitizeSettings(raw) {
     },
     mirror: bool(s.mirror, d.mirror),
     showSkeleton: bool(s.showSkeleton, d.showSkeleton),
+    pipLarge: bool(s.pipLarge, d.pipLarge),
     keyboardAssist: bool(s.keyboardAssist, d.keyboardAssist),
     inputMode: s.inputMode === 'keyboard' ? 'keyboard' : s.inputMode === 'camera' ? 'camera' : d.inputMode,
     reducedMotion: bool(s.reducedMotion, d.reducedMotion),
