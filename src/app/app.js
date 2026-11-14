@@ -111,6 +111,7 @@ export class App {
     this._resumedAt = -Infinity;
     this._lostSince = [null, null];
     this._noPoseSince = [null, null]; // the HUD hands warning: when each player's pose went missing
+    this._freeEnd = [null, null];     // the last moment each player's tracking was optional (opponent down: _trackingFree)
     this._calibSkipped = new Set();
     this._saved = new Map();    // `${profileId}|${resultId}` → SaveResult (never apply a result twice)
     this._saveLog = [];
@@ -194,7 +195,7 @@ export class App {
     // ERR02: tracking lost (the watchdog in frame() also covers players never found).
     bus.on(Ev.INPUT_TRACKING_LOST, (e) => {
       const i = e?.player === 1 ? 1 : 0;
-      if (this._live() && this._camera() && i < this.session.humans && this.session.canPause) this.requestPause('tracking', { player: i });
+      if (this._live() && this._camera() && i < this.session.humans && this.session.canPause && !this._trackingFree(i, nowMs())) this.requestPause('tracking', { player: i });
     });
     // Esc (camera mode without keyboard assist has no other pause key besides P); Enter / Esc skip the
     // bout outro; Enter skips the first-bout tutorial. Keys a screen already handled (Enter on the VS
@@ -344,7 +345,7 @@ export class App {
     const warn = !!s && this._live() && s.canPause && !this._pausing && camOk;
     const presence = Array.isArray(st.presence) ? st.presence : [];
     const handsWarning = (res.players || []).map((p, i) => {
-      if (!warn || i >= (s.humans ?? 1)) { this._noPoseSince[i] = null; return false; }
+      if (!warn || i >= (s.humans ?? 1) || this._trackingFree(i, now, true)) { this._noPoseSince[i] = null; return false; }
       if (presence[i] === false) this._noPoseSince[i] = this._noPoseSince[i] ?? now;
       else this._noPoseSince[i] = null;
       return p?.control?.tracked === false || (this._noPoseSince[i] !== null && now - this._noPoseSince[i] >= APP_TUNING.handsWarnPoseMs);
@@ -361,13 +362,26 @@ export class App {
   /** Camera-like input (webcam, clip, replay or injected poses): tracking matters. */
   _camera() { return this.input.mode !== InputMode.KEYBOARD; }
 
+  /**
+   * Human player i's tracking may lapse right now: their opponent is down for the count (MatchSession.trackingOptional;
+   * a player's request, 2026-11-13 — the hands may leave the picture then: no warning, no tracking-lost card). Just
+   * after (the opponent got up), a player still or newly out of sight gets the usual HUB_TUNING.lostMs of warning
+   * before the card: the pause waits until then (`warnOnly`: the HUD warning, which shows at once again).
+   */
+  _trackingFree(i, now, warnOnly = false) {
+    if (this.session?.trackingOptional?.(i)) { this._freeEnd[i] = now; return true; }
+    if (warnOnly || this._freeEnd[i] === null) return false;
+    return now - this._freeEnd[i] < (this.input.tuning?.lostMs ?? 1000);
+  }
+
   /** ERR02: a required player is not tracked → pause with the tracking-lost screen. */
   _watchTracking(now, status) {
     const s = this.session;
     if (!this._camera() || !s.canPause || this._pausing) { this._lostSince = [null, null]; return; }
     const tracking = status?.tracking || [];
     for (let i = 0; i < s.humans; i++) {
-      if (tracking[i]) { this._lostSince[i] = null; continue; }
+      // (the opponent is down for the count, or got up less than lostMs ago: see _trackingFree)
+      if (tracking[i] || this._trackingFree(i, now)) { this._lostSince[i] = null; continue; }
       if (this._lostSince[i] === null) this._lostSince[i] = now;
       if (now - this._lostSince[i] >= APP_TUNING.trackingGraceMs) {
         this._lostSince = [null, null];
@@ -482,6 +496,7 @@ export class App {
     this.flow = session.kind;
     this._resumedAt = nowMs();
     this._lostSince = [null, null];
+    this._freeEnd = [null, null];
     return new Promise((resolve, reject) => { this._play = { resolve, reject }; });
   }
 

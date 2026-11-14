@@ -143,7 +143,9 @@ Until then a small badge at the top says "Sound is off — click or press any ke
 **Tracking lost.** If the game loses a player's hands during a bout or drill (a hand out of the picture, or the
 whole player), a "Please keep your hands visible" warning shows at the top; if they stay out for about another
 second, the game pauses and names who must come back ("We can't see your hands" / "We lost sight of you"). It
-carries on by itself half a second after both hands are back in view, or at once with **Resume**. If the camera itself stops (unplugged, or taken by another app), the same screen says so
+carries on by itself half a second after both hands are back in view, or at once with **Resume**. While your
+knocked-down opponent is being counted, you may step out of the picture: no warning and no pause until
+your opponent is up again (then the usual warning comes first). If the camera itself stops (unplugged, or taken by another app), the same screen says so
 and offers **Try again**, which restarts the camera and keeps the paused bout. If the browser's
 graphics reset in the middle of a bout (the arena goes blank), the bout pauses and the pause card
 says so; **Continue** comes back as soon as the picture does.

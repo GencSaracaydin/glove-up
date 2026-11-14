@@ -1047,6 +1047,11 @@ export class UI {
   (`.gu-handswarn`, top centre; `handsWarningText()` names the player in versus). The hub's
   `HUB_TUNING.lostMs` (1000 ms, was 600) is that warning's window before INPUT_TRACKING_LOST pauses the
   activity; the card then says "We can't see your hands" when the player is in the picture without them.
+* **Opponent down (2026-11-13):** while a human player's opponent is down for the count
+  (`MatchSession.trackingOptional(i)`: the KNOCKDOWN phase, the other corner down, the bout not decided), that
+  player may leave the picture — `App._trackingFree` keeps the hands warning off and ignores the watchdog and
+  INPUT_TRACKING_LOST for them. Once the opponent is up, the warning shows at once and the pause waits
+  `HUB_TUNING.lostMs` after the end of the count. The player who is down always needs tracking (they pump to rise).
 * **Sound-off badge (D13):** while `audio.needsGesture` the UI shows "Sound is off — click or press
   any key to turn it on" at the top centre, until a real click, tap or key press unlocks audio.
 * **Small-screen gate (D14):** below 700 px wide, or in portrait narrower than 3:4, a full-screen

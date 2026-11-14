@@ -36,6 +36,8 @@
 //              calibration completes, a full round is fought with recognised punches, guards and leans
 //   lost       (continues synthetic) the player vanishes → "Please keep your hands visible", then the ERR02 pause
 //              naming them; back with both hands in view, the bout carries on by itself where it stopped  [A13 ERR02]
+//   kd-away    scripted poses: the player knocks the opponent down and walks out of the picture during the count — no
+//              hands warning, no pause until the opponent is up; then the warning, the card, and back in view it goes on
 //   storage    localStorage throws → KO → outro → "not saved" notice on the results card  [A14 ERR04]
 //   persist    a local boxer's records survive a reload; a guest's don't; a visiting (portable)
 //              boxer plays on another device without anything being written there  [A12 SAV01]
@@ -789,6 +791,61 @@ scenario('lost', async (browser, shared) => {
   await P.page.waitForTimeout(600);
   await P.shot('g03-resumed');
   assertClean(P, 'lost');
+  await P.context.close();
+});
+
+scenario('kd-away', async (browser) => {
+  // (a player's request, 2026-11-13) while the player's opponent is down for the count the player may leave the picture:
+  // no hands warning, no tracking-lost card. Once the opponent is up: the usual warning, then the card; back in view, on.
+  const P = await openPage(browser, { path: '/?input=synthetic&seed=24&tutorial=0' });
+  await P.screen('title');
+  await P.page.evaluate(() => window.__glove.skipTo('match'));
+  const liveBy = Date.now() + 60000 * SLOW;
+  for (;;) {
+    const st = await P.state();
+    if (st.activity?.stage === 'live' && !st.activity?.paused) break;
+    check(Date.now() < liveBy, `the bout went live with the scripted player in view (screen ${st.screen}, stage ${st.activity?.stage})`);
+    if (st.screen === 'camera-setup') {
+      const b = P.page.locator('.gu-camsetup .gu-footer .gu-btn--primary');
+      if (await b.isEnabled().catch(() => false)) await b.click().catch(() => {});
+    }
+    if (st.screen === 'vs' || st.screen === 'opponent') await P.page.keyboard.press('Enter').catch(() => {});
+    await P.pose('guard-high', 700);
+    await P.page.waitForTimeout(400);
+  }
+  await P.pose('guard-high', 1500);
+  await P.page.waitForTimeout(700);
+  // down goes the opponent (up again at the count of 7, about 8 s), and the player walks out of the picture
+  await knockDown(P, 'p2', { stayDown: false, riseCount: 7 });
+  await P.phase('knockdown', 10000);   // (after the blow lands and its hit-stop)
+  await P.pose('walk-away', 3000);      // (out of the picture after it, until the next pose)
+  let lost = false, warned = false, card = false, checks = 0, shot = false;
+  const countBy = Date.now() + 30000 * SLOW;
+  for (;;) {
+    const r = await P.page.evaluate(() => {
+      const s = window.__glove.state();
+      return { phase: s.activity?.phase, screen: s.screen, lost: s.input?.tracking?.[0] === false, warn: document.querySelector('.gu-handswarn')?.hidden === false };
+    });
+    if (r.phase !== 'knockdown') break;
+    check(Date.now() < countBy, 'the count ended');
+    checks++;
+    lost ||= r.lost; warned ||= r.warn; card ||= r.screen === 'tracking-lost';
+    if (r.lost && !shot) { shot = true; await P.shot('g04-opponent-down-player-away'); }
+    await P.page.waitForTimeout(100);
+  }
+  log(`  ${checks} checks during the count; the hub lost the player: ${lost}`);
+  check(lost, 'the player was out of sight during the count (the hub lost them)');
+  check(!warned && !card, 'opponent down: no hands warning and no tracking-lost card while the player is away');
+  // the opponent is up: the warning first, then the card
+  await P.until(() => document.querySelector('.gu-handswarn')?.hidden === false, null, 5000);
+  check((await P.state()).screen !== 'tracking-lost', 'the warning comes before the card');
+  await P.screen('tracking-lost', { timeout: 15000, settle: 400 });
+  check((await P.state()).pauseReason === 'tracking', 'still away once the opponent is up: the bout pauses');
+  await P.shot('g05-opponent-up-player-away');
+  // back in view: it carries on by itself
+  await P.pose('idle', 3000);
+  await P.until(() => !window.__glove.state().activity?.paused, null, 10000);
+  assertClean(P, 'kd-away');
   await P.context.close();
 });
 

@@ -159,6 +159,18 @@ export class MatchSession {
 
   /** Pausing is pointless (and quitting would discard a decided bout) once the result is locked. */
   get canPause() { return !!this.match && !this.match.isOver() && !this.finished; }
+  /**
+   * Human player i may leave the picture right now: their opponent is down for the count (a player's request,
+   * 2026-11-13). The app then neither asks for i's hands nor pauses for i; once the opponent is up again (or
+   * counted out) tracking matters again. The player who is down still needs tracking — pumping the arms gets them up.
+   * @param {0|1} i
+   */
+  trackingOptional(i) {
+    const m = this.match;
+    if (!m || this.paused || m.isOver() || m.phase !== MatchPhase.KNOCKDOWN) return false;
+    const down = m.downed;
+    return !!down && down !== (i === 1 ? 'p2' : 'p1');
+  }
   /** The result is locked (MAT04) — the app saves it now; the bout keeps playing its KO call / outro. */
   get over() { return !!this.match?.isOver(); }
   /** What play() hands to the app: a match as soon as its result is locked. */
@@ -351,6 +363,8 @@ export class TrainingRun {
   resume() { if (this.act && this.paused) { this.act.resume(); this.paused = false; } }
 
   get canPause() { return !!this.act && !this.act.isDone() && !this.finished; }
+  /** Drills never let tracking lapse (no knockdowns). */
+  trackingOptional() { return false; }
   get over() { return !!this.act?.isDone(); }
   /** What play() hands to the app: a drill once its closing beat has played. */
   get handoff() { return this.finished; }
