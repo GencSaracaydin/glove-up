@@ -673,23 +673,33 @@ scenario('synthetic', async (browser, shared) => {
   await P.shot('f01-camera-ready');
   await P.click(/^Continue/);
   await P.screen('calibrate');
-  // do what each calibration step asks (closed loop on the step list)
-  const plan = { 0: [['idle', 1500]], 1: [['guard-high', 1500]], 2: [['raise-hand', 1200, { hand: 'right' }]], 3: [['idle', 500], ['jab-left', 900]], 4: [['idle', 500], ['jab-right', 900]] };
-  let last = -1;
+  // do what each calibration step asks (closed loop on the page's data-step; the prompt pops up over the preview)
+  const plan = { frame: [['idle', 1500]], guard: [['guard-high', 1500]], 'right-hand': [['raise-hand', 1200, { hand: 'right' }]], 'punch-right': [['idle', 500], ['jab-right', 900]], 'punch-left': [['idle', 500], ['jab-left', 900]] };
+  const order = ['frame', 'guard', 'right-hand', 'punch-right', 'punch-left'];
+  let last = null;
+  const seen = [];
   const deadline = Date.now() + 60000 * SLOW;
   for (;;) {
     check(Date.now() < deadline, 'calibration finishes with synthetic poses');
     const done = await P.page.evaluate(() => !!document.querySelector('.gu-calib .gu-footer .gu-btn--primary'));
     if (done) break;
-    const step = await P.page.evaluate(() => [...document.querySelectorAll('.gu-calib__step')].findIndex((e) => e.classList.contains('is-now')));
+    const step = await P.page.evaluate(() => document.querySelector('.gu-calib')?.dataset.step ?? null);
     const busy = await P.page.evaluate(() => (window.__glove.feeder.busyUntil(0) ?? 0) - performance.now());
     if (step !== last || busy < 120) {
       for (const [a, ms, o] of plan[step] || [['idle', 500]]) await P.pose(a, ms, o);
-      if (step !== last) log(`  calibration step ${step + 1}`);
+      if (step !== last) {
+        log(`  calibration step ${order.indexOf(step) + 1} (${step})`);
+        if (step && step !== 'done') seen.push(step);
+        if (step === 'punch-right') await P.shot('f01b-calibration-prompt');
+      }
       last = step;
     }
     await P.page.waitForTimeout(200);
   }
+  check(order.every((st) => seen.includes(st)) && seen.indexOf('punch-right') < seen.indexOf('punch-left'),
+    `calibration ran its steps with the raised RIGHT hand punching first (${seen.join(' → ')})`);
+  check(await P.page.evaluate(() => !document.querySelector('.gu-calib__steps') && !!document.querySelector('.gu-calib__pop .gu-calib__title')),
+    'the instruction pops up over the camera picture (no step list)');
   await P.page.waitForTimeout(900);
   await P.shot('f02-calibrated');
   await P.click(/^Continue/);
@@ -893,6 +903,9 @@ scenario('settings', async (browser) => {
   await P.page.getByRole('tab', { name: /Play/ }).click();
   await P.page.waitForTimeout(300);
   await P.page.getByRole('switch', { name: 'Keyboard assist' }).click();
+  // (the default sensitivity is 0.6 since 2026-11-13 — a notch less strict than the middle)
+  const sens0 = await P.page.evaluate(() => window.__glove.input.gestureTuning?.sensitivity);
+  check(Math.abs(sens0 - 0.6) < 1e-6, `the default punch sensitivity reaches the recognizers (${sens0})`);
   await P.click('More Punch sensitivity');
   await P.click('More Punch sensitivity');
   await P.page.getByRole('switch', { name: 'Reduced motion' }).click();
@@ -912,7 +925,7 @@ scenario('settings', async (browser) => {
     };
   });
   check(live.assist === true, 'keyboard assist applied to the input hub');
-  check(Math.abs(live.sensitivity - 0.7) < 1e-6, `sensitivity applied to the recognizers (${live.sensitivity})`);
+  check(Math.abs(live.sensitivity - 0.8) < 1e-6, `sensitivity applied to the recognizers (${live.sensitivity})`);
   check(live.reduced && live.reducedUi, 'reduced motion applied to the renderer and the UI');
   check(live.pip === false, 'webcam picture-in-picture turned off');
   check(Math.abs(live.master - 0.6) < 1e-6, `master volume applied to the audio engine (${live.master})`);
@@ -924,7 +937,7 @@ scenario('settings', async (browser) => {
     const g = window.__glove;
     return { assist: g.input.keyboardAssist, sensitivity: g.input.gestureTuning?.sensitivity, reduced: g.renderer._reducedMotion, master: g.audio.getVolume().master };
   });
-  check(boot.assist && Math.abs(boot.sensitivity - 0.7) < 1e-6 && boot.reduced && Math.abs(boot.master - 0.6) < 1e-6, `settings restored at boot (${JSON.stringify(boot)})`);
+  check(boot.assist && Math.abs(boot.sensitivity - 0.8) < 1e-6 && boot.reduced && Math.abs(boot.master - 0.6) < 1e-6, `settings restored at boot (${JSON.stringify(boot)})`);
   assertClean(P, 'settings');
   await P.context.close();
 });

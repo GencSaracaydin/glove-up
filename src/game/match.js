@@ -34,10 +34,11 @@
 // RULES (§2.6–§3.6): health in wedges, no regeneration / top-up / chip; a 4th knockdown always stays
 // down; refill on rising = 10 − 2 × knockdown number; no TKO (ResultMethod.TKO is never produced);
 // the clock never cuts a count short; no saved-by-the-bell (a fighter who rises with 0:00 left goes
-// straight to the round-end bell). Human get-up: a punch-pump meter (8 / 12 / 16 punch events for
-// knockdowns 1 / 2 / 3, ControlState.activity ≥ 0.5 adds a slow trickle), earliest rise at counts
-// 4 / 5 / 7, KO if it isn't full before "10" (view.getUp01). Opponents: stay-down roll per knockdown
-// number, else rise at round(normal(mean, 1.2)) clamped 3–9 (roster stayDown / riseMean).
+// straight to the round-end bell). Human get-up: a punch-pump meter (5 / 7 / 9 punch events for
+// knockdowns 1 / 2 / 3; pumping the arms — ControlState.activity ≥ 0.3 — fills it too, up to 2.5
+// punches a second), earliest rise at counts 4 / 5 / 7, KO if it isn't full before "10"
+// (view.getUp01). Opponents: stay-down roll per knockdown number, else rise at
+// round(normal(mean, 1.2)) clamped 3–9 (roster stayDown / riseMean).
 //
 // DODGE SLOW MOTION (§2.5, ARCHITECTURE §6.3): when a HUMAN dodges an AI punch with a FRESH dodge (the posture
 // entered within COMBAT.freshDodgeMs of the deciding sample, or after the punch's wind-up began — decision R2; a
@@ -109,10 +110,13 @@ export const RULES = Object.freeze({
   getUp: {
     refillWedges: [8, 6, 4],     // refill on rising from knockdown 1 / 2 / 3 (10 − 2k)
     human: {
-      punches: [8, 12, 16],      // punch events to fill the get-up meter for knockdown 1 / 2 / 3
+      // (2026-11-13, a player's report: 8 / 12 / 16 punches, with a 1 punch/s arm-pump trickle from activity 0.5, made the
+      // first get-up very hard and the second almost impossible — the camera recognises only part of a flurry thrown while
+      // down, and pumping both arms at once is no punch at all. Now pumping the arms alone gets a player up in time.)
+      punches: [5, 7, 9],        // punch events to fill the get-up meter for knockdown 1 / 2 / 3
       earliestCount: [4, 5, 7],  // never up before this count
-      activityPunchesPerSec: 1,  // ControlState.activity ≥ activityMin adds this × activity punches/s
-      activityMin: 0.5,
+      activityPunchesPerSec: 2.5, // ControlState.activity ≥ activityMin adds this × activity punches/s
+      activityMin: 0.3,
       graceMs: 300,              // effort only counts this long after the fall
     },
     ai: { sd: 1.2, minCount: 3, maxCount: 9 }, // rise count ~ normal(roster riseMean[k], sd) clamped

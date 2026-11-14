@@ -33,7 +33,7 @@
 
 import { EventBus } from '../core/events.js';
 import { Ev, InputMode, ProfileKind, ResultMethod } from '../core/types.js';
-import { Storage } from '../core/storage.js';
+import { Storage, DEFAULT_SETTINGS } from '../core/storage.js';
 import { AudioEngine } from '../audio/audio.js';
 import { GameRenderer } from '../render/renderer.js';
 import { UI } from '../ui/ui.js';
@@ -145,7 +145,7 @@ export class App {
     this.input = new InputHub({
       bus: this.bus, mode, players: 1, video: this.video,
       model: s.model, deviceId: s.cameraDeviceId || undefined, keyboardAssist: !!s.keyboardAssist,
-      gestureTuning: { sensitivity: Number.isFinite(s.sensitivity) ? s.sensitivity : 0.5 },
+      gestureTuning: { sensitivity: Number.isFinite(s.sensitivity) ? s.sensitivity : DEFAULT_SETTINGS.sensitivity },
       videoSource: P.video || null,
       // PERF-01: pose detection in a background worker by default; ?detector=main forces the main thread
       detector: P.detector || undefined,

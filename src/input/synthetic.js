@@ -218,7 +218,7 @@ export function withPreset(opts = {}) {
 export const SYNTH_ACTIONS = Object.freeze([
   'idle', 'guard-high', 'guard-low', 'arms-down', 'pause',
   'jab', 'cross', 'jab-left', 'jab-right', 'hook-left', 'hook-right', 'uppercut-left', 'uppercut-right',
-  'body-left', 'body-right',
+  'body-left', 'body-right', 'hook-body-left', 'hook-body-right',
   'lean-left', 'lean-right', 'duck', 'lean-forward', 'lean-back', 'twist-left', 'twist-right',
   'wave', 'scratch-face', 'adjust-glasses', 'reach-slow', 'point', 'raise-hand', 'pull-back', 'walk-away',
 ]);
@@ -235,6 +235,8 @@ const PUNCHES = {
   'uppercut-right': { hand: 'right', kind: 'uppercut', target: 'head', twist: 0.14 },
   'body-left': { hand: 'left', kind: 'straight', target: 'body', twist: 0.16 },
   'body-right': { hand: 'right', kind: 'straight', target: 'body', twist: 0.16 },
+  'hook-body-left': { hand: 'left', kind: 'hook', target: 'body', twist: 0.3 },
+  'hook-body-right': { hand: 'right', kind: 'hook', target: 'body', twist: 0.3 },
 };
 /** One-arm gestures that are NOT punches. */
 const GESTURES = { wave: 1, 'scratch-face': 1, 'adjust-glasses': 1, 'reach-slow': 1, point: 1, 'raise-hand': 1, 'pull-back': 1 };
@@ -483,6 +485,11 @@ export function makeSyntheticPlayer(opts = {}) {
   function punchTarget(step, hand, sp, start = null) {
     const def = PUNCHES[step.action];
     const s = hand === 'right' ? 1 : -1;
+    if (def.kind === 'hook' && def.target === 'body') {
+      // a body hook: the fist drops from the guard and swings in at rib height, the elbow bent (~95°), low and out to
+      // the side — never raised to the shoulder like a head hook's
+      return { end: mul([-s * (0.15 + sp.aimR), -0.30 + sp.aimU * 0.5, 0.27], k), ctrl: mul([s * 0.20, -0.24, 0.18], k), pole: [s * 0.8, -0.6, -0.25] };
+    }
     if (def.kind === 'hook') {
       return { end: mul([-s * (0.24 + sp.aimR), 0.04 + sp.aimU * 0.5, 0.32], k), ctrl: mul([s * 0.20, -0.02, 0.24], k), pole: [s * 1, 0.02, -0.3] };
     }

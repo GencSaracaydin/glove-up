@@ -310,6 +310,12 @@ export class GestureRecognizer {
     (`depthTrusted`: on at ≤ `depthTrustNoise` 8 mm, off again above 11 mm).
   - The picture's dip-less uppercut (R1) works at any depth quality.
 * COM02: wrist height at the punch → head / body; hooks and uppercuts recognised as `kind`.
+  - Body hooks (`bodyHook`, 2026-11-13): a hook whose fist ends at body height (below `bodySplit`) may keep
+    the elbow low by the side — only out to its side (`bodyHookElbowOut` 0 SW) and the fist above
+    `bodyHookMinY` −1.7 SW; the head hook's "elbow raised" test and its −1.1 SW wrist floor rejected every
+    body hook, and the fist's way back up to the guard then fired as an uppercut to the head. Synthetic
+    body hooks (20 players × 2 hands × 6, 'real-like'): 0 → 205 of 240 hooks to the body (217 body punches),
+    phantom head uppercuts 80 → 10; head hooks, jabs and the non-punch gestures unchanged.
 * `PunchInput.power` 0..1 comes from the punch's own speed (log-spread; ~0.47 / 0.63 / 0.82 for
   360 / 200 / 110 ms punches), never from the sensitivity setting.
 * COM03 guard high / low with `guardAmount`; COM04 lean per research/mechanics.md §2.1: `lean.x`
@@ -478,18 +484,19 @@ export class GestureRecognizer {
 ```js
 export class CalibrationSession {
   constructor({ latency /* number | () => number */ })
-  update(pose, tMs) /* → {step:'frame'|'guard'|'right-hand'|'punch-left'|'punch-right'|'done', progress, message, ok, done, result,
-                          hint, stuck} */
+  update(pose, tMs) /* → {step:'frame'|'guard'|'right-hand'|'punch-right'|'punch-left'|'done', progress, stepProgress, message,
+                          ok, done, result, hint, stuck} */
 }
 ```
 Steps: framing; a 1 s guard hold (the head's offset over the shoulders, tilt); raise your RIGHT
-hand (label swap, arm length); three punches per hand (head height, depth scale, suggested
-sensitivity). `result.latencyMs` stores the measured camera → game latency (§4.6);
+hand (label swap, arm length); three punches per hand, the raised RIGHT hand first (head height, depth
+scale, suggested sensitivity). The calibrate screen shows one instruction at a time, popping up over
+the live preview with the step's own progress ring (no step list; the page carries `data-step`). `result.latencyMs` stores the measured camera → game latency (§4.6);
 `result.neutralHeadRel` the head over the shoulder centre in SW (gesture.js's sanity check for the
 per-bout neutral). `neutralHead`, `neutralShoulderY` and `shoulderWidth` stay in the result as
 metadata only (storage.sanitizeCalibration requires them). The punch steps cross-check the raise
 step: two punches with the other hand and none with the asked one contradict it. If the raise step
-found swapped labels and the left punch step had not already confirmed them (two or more of its
+found swapped labels and the first (right) punch step had not already confirmed them (two or more of its
 punches), left and right are swapped back to the default, once ("Left and right looked swapped —
 fixed!"). Otherwise the punch steps never swap by themselves (R1, RV-INPUT-03): the right hand is
 asked for once more (step 'right-hand' again, in our own body-only words: "Quick check: raise your
@@ -506,7 +513,7 @@ recognizer's early decision fires before full extension, and a retraction-confir
 ### input/synthetic.js — owner: input
 `makeSyntheticPlayer({seed, noise, distance, lateral, lead})`, `sequence([{action, ms}])`,
 `syntheticPoseFrames(script, opts)`, `SYNTH_ACTIONS` (idle, guard-high/low, jab/cross, hooks,
-uppercuts, body punches, lean-left/right, duck, twist-left/right, raise-hand, pause, wave,
+uppercuts, body straights, body hooks (`hook-body-left/right`: the elbow low by the side), lean-left/right, duck, twist-left/right, raise-hand, pause, wave,
 scratch-face, walk-away, arms-down, point …). Used by unit tests, the e2e run and `injectPose`.
 `lead: 'left'|'right'` (default 'left') is the hand the scripted player holds forward: 'jab' throws
 with it and 'cross' with the other hand, and a right-lead player's torso and feet turn the other way.
@@ -810,8 +817,8 @@ Up to 3 rounds; the clock shows 3:00 and runs 1 game-s per 0.333 s (`roundRealMs
 tutorial step) · KNOCKDOWN `fall → down-call → count → ko-call → ko-hold` · RECOVERY `rise →
 standoff → fight` · ROUND_END `bell → hold` · BETWEEN `arena` · DECISION `decision` · RESULT `result`.
 Count 1.08 s per number; refill on rising 8 / 6 / 4 wedges; **no TKO** — the 4th knockdown is
-always a KO; the clock never cuts a count short; human get-up meter 8 / 12 / 16 punches with the
-earliest rise at counts 4 / 5 / 7; opponents roll their stay-down chance, else rise at
+always a KO; the clock never cuts a count short; human get-up meter 5 / 7 / 9 punches (arm pumping,
+activity ≥ 0.3, adds up to 2.5 a second) with the earliest rise at counts 4 / 5 / 7; opponents roll their stay-down chance, else rise at
 normal(mean, 1.2) clamped 3–9. A FRESH dodge of an AI punch by a human opens the slow motion
 (§6.3, decision R2): `MATCH_DODGE` carries `fresh` (and `how`), with `counterWindowMs` 0 when not
 fresh; a non-fresh dodge marks the AI punch `heldDodge` (no glove-hang counter either).
@@ -1249,8 +1256,10 @@ this file). training/* is unchanged except where integration recalibrated it.
   on rising 8 / 6 / 4. **No TKO**; a 4th knockdown is always a KO; the clock never cuts a count
   short; no saved-by-the-bell.
 * Count 1.08 s per number; stoppage per §3.1; stand-off 3.3–5.7 s after rising, then "Fight!".
-* Human get-up: 8 / 12 / 16 punches for knockdowns 1 / 2 / 3, earliest rise at counts 4 / 5 / 7
-  (§3.6); arm-pumping activity adds a slow trickle. Opponent rise: stay-down roll + normal(mean,
+* Human get-up: 5 / 7 / 9 punches for knockdowns 1 / 2 / 3, earliest rise at counts 4 / 5 / 7
+  (§3.6); arm-pumping activity (≥ 0.3) adds 2.5 × activity punches a second, so pumping alone gets a
+  player up in time (eased 2026-11-13 from 8 / 12 / 16 with a slow trickle: the second get-up was
+  near impossible on a real webcam). Opponent rise: stay-down roll + normal(mean,
   1.2) clamped 3–9 (§3.2, §4.5b).
 * `MATCH_HIT` carries `heavy`, `knockdown`, `hpBefore`, `hpAfter` (wedges), `dealt`, `powerPunch`
   (and `synthetic` for a debug knockdown's blow).

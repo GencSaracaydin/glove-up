@@ -92,12 +92,12 @@ you into a silhouette. Plain, uncluttered backgrounds track best. Posters of peo
 ignored, but they cost a little accuracy.
 
 **Calibration (about 20 seconds).** An uncalibrated boxer gets a quick calibration before their
-first bout:
+first bout. Each instruction pops up over the camera picture, one at a time:
 
 1. Step into the picture.
 2. Hold your gloves up by your chin and keep still.
 3. Raise your RIGHT hand.
-4. Throw a few straight punches with your left hand, then with your right.
+4. Throw a few straight punches with that right hand, then with your left.
 
 The result is saved with the boxer. It covers how your head sits over your shoulders, your arm
 length and punch height, whether this camera swaps left and right (if you raised the wrong hand,
@@ -192,7 +192,7 @@ arrow keys. In single player the P2 keys drive P1 too. With
   the main-thread fallback: the previous model is still loaded, so tracking doesn't pause.
   **Full** or **Lite** is used as chosen and never changed. Settings saved before Auto existed had Full
   only because it was the default; they now get Auto (a saved Lite stays Lite).
-- **Play:** punch sensitivity (applied at once and after a reload), the webcam
+- **Play:** punch sensitivity (default one notch above the middle, still "Normal"; applied at once and after a reload), the webcam
   picture-in-picture with your skeleton (and **Bigger camera picture** to enlarge it, e.g. for recording a
   video), keyboard assist and reduced motion.
 - **Sound:** master, effects, music and announcer volumes.
@@ -219,7 +219,7 @@ Changes apply immediately and are saved.
 **Designed by us** (estimates where the footage shows nothing, and every asset):
 - all characters, names, faces, the ring, the crowd, the HUD graphics, the meter design (our own
   10-segment badge, not a pie), the VS and results cards, sounds, music and voice lines;
-- the webcam mapping of every move, the get-up meter (8 / 12 / 16 punches), latency-fair defence,
+- the webcam mapping of every move, the get-up meter (5 / 7 / 9 punches, or pump your arms), latency-fair defence,
   the judges and draws, rating losses (−40 KO / −25 decision), rematch ratings, glove unlocks;
 - the tutorial's "hold 1 s or do it 3 times, 10 s cap" rule, the training drills and medals.
 

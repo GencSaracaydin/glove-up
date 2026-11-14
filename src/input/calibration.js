@@ -11,7 +11,8 @@
 //   3 'right-hand'   raise the RIGHT hand straight up → detects mirrored feeds / swapped
 //                    left-right labels (Calibration.swapSides) and measures the true arm length
 //                    (an arm held up lies in the image plane, so its depth is not compressed);
-//   4 'punch-left' / 'punch-right'   three punches with each hand at the screen → the head-punch
+//   4 'punch-right' / 'punch-left'   three punches with each hand at the screen, the RIGHT hand first — the hand the
+//                    player has just raised (raise right, then punch left was confusing: 2026-11-13) → the head-punch
 //                    height, the tracker's depth compression (zScale), and the player's natural
 //                    punch speed → a suggested sensitivity. Punches thrown with the other hand are
 //                    pointed out ("That was your right hand…", shown for eventMessageMs); when they
@@ -19,7 +20,7 @@
 //                    contradict the raise step. They may only swap left / right back to the browser
 //                    default — when the raise step found them swapped and nothing confirmed it (the raise
 //                    caught the LEFT hand, INPUT-06); they never swap on their own (RV-INPUT-03). Any other
-//                    contradiction (no swap found; or a swap the left punch step already confirmed) asks
+//                    contradiction (no swap found; or a swap the first punch step — right — already confirmed) asks
 //                    for the right hand once more ('right-hand' again, in plain mirror terms), and only a
 //                    second raise that agrees with the punches changes it. After that, only the message;
 //   5 'done'. The result also stores the measured camera → game latency (Calibration.latencyMs,
@@ -101,7 +102,7 @@ export const CALIBRATION_DEFAULTS = Object.freeze({
  *  body only, never which side of the picture (the preview may or may not be mirrored, the camera too). */
 const RECHECK_MSG = 'Quick check: raise your own RIGHT hand high above your head. The picture may be mirrored, so go by your body, not the screen.';
 
-const STEPS = ['frame', 'guard', 'right-hand', 'punch-left', 'punch-right', 'done'];
+const STEPS = ['frame', 'guard', 'right-hand', 'punch-right', 'punch-left', 'done'];
 const STEP_WEIGHT = { frame: 0.15, guard: 0.2, 'right-hand': 0.15, 'punch-left': 0.25, 'punch-right': 0.25 };
 
 const SWAP_PAIRS = [[1, 4], [2, 5], [3, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20], [21, 22], [23, 24], [25, 26], [27, 28], [29, 30], [31, 32]];
@@ -364,8 +365,9 @@ export class CalibrationSession {
         return this._resumePunches(`Thanks! Now 3 punches with your ${this._recheck.from === 'punch-left' ? 'LEFT' : 'RIGHT'} hand at the screen.`);
       }
       this._swapSides = v.swapped > v.normal;
-      this._enter('punch-left');
-      return this._state(0, 'Nice! Now throw 3 punches with your LEFT hand at the screen.', true);
+      // (the punches start with the hand just raised: the right one)
+      this._enter('punch-right');
+      return this._state(0, 'Nice! Now throw 3 punches with that RIGHT hand at the screen.', true);
     }
     if (elapsed > T.raiseGiveUpMs && this._recheck) {
       this._notes.push('the second right-hand raise timed out: left and right kept');
@@ -374,8 +376,8 @@ export class CalibrationSession {
     if (elapsed > T.raiseGiveUpMs) {
       this._notes.push('right-hand step timed out; assuming the camera is not mirrored');
       this._swapSides = false;
-      this._enter('punch-left');
-      return this._state(0, 'Let’s move on. Throw 3 punches with your LEFT hand at the screen.', true);
+      this._enter('punch-right');
+      return this._state(0, 'Let’s move on. Throw 3 punches with your RIGHT hand at the screen.', true);
     }
     const hint = elapsed > T.hintAfterMs
       ? 'Tip: lift the hand on your RIGHT side (in the mirror picture it’s on the right of the screen) straight up, higher than your head.'
@@ -413,9 +415,9 @@ export class CalibrationSession {
         // only the "other" hand punches, even after being told so: the punch steps contradict the raise step.
         // A player who really used the wrong hand sees the message below after the first punch and switches.
         if (this._stepWrong >= T.swapFixWrongPunches && this._punch[hand].length === 0 && !this._recheck) {
-          // (the left punch step already went as the raise said — two of its punches or more: the right step alone
-          // is no reason to swap back)
-          const confirmed = hand === Hand.RIGHT && this._punch[Hand.LEFT].length >= T.swapFixWrongPunches;
+          // (the right punch step — the first — already went as the raise said, two of its punches or more: the left
+          // step alone is no reason to swap back)
+          const confirmed = hand === Hand.LEFT && this._punch[Hand.RIGHT].length >= T.swapFixWrongPunches;
           if (this._swapSides && this._flippedAt === null && !confirmed) {
             // the raise step said "mirrored" (browsers almost never deliver mirrored frames): it caught the LEFT
             // hand — swap left and right back to the default, once (INPUT-06)
@@ -447,7 +449,7 @@ export class CalibrationSession {
     const need = T.punchesPerHand;
     const following = this._punch[hand].some((sm) => sm.until > tMs);
     const finish = () => {
-      if (hand === Hand.LEFT) { this._enter('punch-right'); return this._state(0, 'Great! Now 3 punches with your RIGHT hand.', true); }
+      if (hand === Hand.RIGHT) { this._enter('punch-left'); return this._state(0, 'Great! Now 3 punches with your LEFT hand.', true); }
       this._enter('done');
       return this._state(1, 'All set! Gloves up — let’s box.', true);
     };

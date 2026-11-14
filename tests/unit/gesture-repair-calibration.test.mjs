@@ -92,15 +92,16 @@ test('repair RV-INPUT-03: the LEFT hand raised on a normal camera is still swapp
   }
 });
 
-test('repair RV-INPUT-03: a mirrored camera with a correct raise and left step, then the LEFT hand in the right step → asked again, still swapped', () => {
-  // (the right step alone used to swap a raise the left step had already confirmed back to "not mirrored")
+test('repair RV-INPUT-03: a mirrored camera with a correct raise and right step, then the RIGHT hand in the left step → asked again, still swapped', () => {
+  // (the second punch step alone used to swap a raise the first had already confirmed back to "not mirrored"; the punch steps
+  // run right hand first since 2026-11-13 — the hand just raised)
   for (const seed of [9100, 9101]) {
     const o = randomPlayerOptions(seed, { noise: 1, mirrorCamera: true });
-    const r = calibrate(o, { punch: () => 'left' });
+    const r = calibrate(o, { punch: () => 'right' });
     assert(r.result && r.result.swapSides === true, `seed ${seed}: swapSides ${r.result && r.result.swapSides}`);
     assert(asked(r) === 2, `seed ${seed}: the right hand was asked for ${asked(r)} times`);
     // its normal-camera mirror image, whose second raise says "not mirrored", ends not swapped
-    const n = calibrate(randomPlayerOptions(seed, { noise: 1 }), { raise: (k) => (k === 1 ? 'left' : 'right'), punch: () => 'right' });
+    const n = calibrate(randomPlayerOptions(seed, { noise: 1 }), { raise: (k) => (k === 1 ? 'left' : 'right'), punch: () => 'left' });
     assert(n.result && n.result.swapSides === false, `seed ${seed}: normal camera, left then right raised → swapSides ${n.result && n.result.swapSides}`);
   }
 });

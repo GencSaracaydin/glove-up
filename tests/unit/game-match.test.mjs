@@ -179,7 +179,7 @@ test('match: KO — still down at "10" → "KO" 1–2 s later (call + MATCH_KO) 
   assert(['fall', 'down-call', 'count', 'ko-call'].every((s) => stages.includes(s)), stages.join(','));
 });
 
-test('match: the human gets up by pumping punches — 8 / 12 / 16 punches, earliest at counts 4 / 5 / 7 (§3.6)', () => {
+test('match: the human gets up by pumping punches — 5 / 7 / 9 punches, earliest at counts 4 / 5 / 7 (§3.6)', () => {
   const h = harness({ mode: 'versus' });
   const pumpInputs = (k) => { let i = 0; return () => ({ p1: { control: ctl({ activity: 0 }), events: ++i % 2 === 0 && i < k * 2 + 30 ? [punchEv(i % 4 ? 'left' : 'right')] : [] }, p2: idle() }); };
   for (const [kd, earliest] of [[1, 4], [2, 5], [3, 7]]) {
@@ -223,6 +223,28 @@ test('match: pumping the arms (ControlState.activity) alone slowly fills the met
   h.m.debugKnockdown('p1');
   assert(h.runUntil(() => h.m.phase === MatchPhase.RECOVERY || !!h.m.getResult(), () => ({ p1: { control: ctl({ activity: 1 }), events: [] }, p2: idle() }), 15000));
   assert.equal(h.m.getResult(), null, 'rose before 10 on activity alone (first knockdown)');
+});
+
+test('match: steady arm pumping alone gets a player up from knockdowns 1, 2 and 3 in time; standing still does not (eased 2026-11-13)', () => {
+  // (a player's report: the first get-up was very hard and the second almost impossible. Pumping both arms is no punch for
+  // the recognizer and a flurry's activity sits around 0.25–0.4 — below the old 0.5 trickle threshold — so only the
+  // recognised punches counted, 8 / 12 / 16 of them)
+  const R = { countIntervalMs: 1080, firstNumberMs: 1000, downCallMs: 600 };
+  const h = harness({ mode: 'versus', rules: R });
+  for (let kd = 1; kd <= 3; kd++) {
+    h.runUntil(() => h.m.phase === MatchPhase.FIGHTING, () => ({ p1: idle(), p2: idle() }));
+    h.m.debugKnockdown('p1');
+    const before = h.log.length;
+    assert(h.runUntil(() => h.m.phase === MatchPhase.RECOVERY || !!h.m.getResult(), () => ({ p1: { control: ctl({ activity: 0.4 }), events: [] }, p2: idle() }), 15000));
+    assert.equal(h.m.getResult(), null, `rose from knockdown ${kd} on arm pumping alone`);
+    const up = h.log.slice(before).find((e) => e.name === Ev.MATCH_GETUP);
+    assert(up && up.p.atCount <= 8, `knockdown ${kd}: up at ${up && up.p.atCount}`);
+  }
+  const still = harness({ mode: 'versus', rules: R });
+  still.runUntil(() => still.m.phase === MatchPhase.FIGHTING, () => ({ p1: idle(), p2: idle() }));
+  still.m.debugKnockdown('p1');
+  assert(still.runUntil(() => !!still.m.getResult(), () => ({ p1: { control: ctl({ activity: 0.25 }), events: [] }, p2: idle() }), 15000));
+  assert(still.m.getResult().method === ResultMethod.KO, 'barely moving (activity below activityMin) is counted out');
 });
 
 test('match: opponents get up per their stay-down chance and rise counts ~ normal(mean, 1.2) clamped 3–9 (§3.2, §3.6)', () => {

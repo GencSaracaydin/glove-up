@@ -153,10 +153,11 @@ export const STORAGE_LIMITS = Object.freeze({
 /**
  * @typedef {Object} Settings
  * @property {number} schema
- * @property {number} rev             settings revision (SETTINGS_REV): 2 = the tracking model may be 'auto'
+ * @property {number} rev             settings revision (SETTINGS_REV): 2 = the tracking model may be 'auto'; 3 = sensitivity default 0.6
  * @property {string|null} cameraDeviceId
  * @property {'auto'|'full'|'lite'} model  pose model: 'auto' (default) = full, lite while the machine can't keep up (PERF-06)
- * @property {number} sensitivity      0..1 punch sensitivity (0.5 = default thresholds; higher = easier punches)
+ * @property {number} sensitivity      0..1 punch sensitivity (0.5 = the recognizer's base thresholds, the default 0.6 a notch
+ *                                     easier; higher = easier punches)
  * @property {{master:number, sfx:number, music:number, voice:number}} volumes   0..1 each
  * @property {boolean} mirror          mirror webcam previews
  * @property {boolean} showSkeleton    webcam picture-in-picture with skeleton during play
@@ -207,15 +208,18 @@ export const GUEST_LOOKS = Object.freeze([
  * Settings revision. 2 (PERF-06): the tracking model has an 'auto' choice, the new default. Settings saved before
  * (no `rev`) hold model 'full' whenever anything was saved, because 'full' was the default — that 'full' becomes
  * 'auto'; an older 'lite' was a real choice and stays. From rev 2 on, an explicit 'full' is kept.
+ * 3 (2026-11-13): the default punch sensitivity is a notch less strict, 0.6 (was 0.5 — a player found the old default a
+ * little strict and always moved it up one step). A 0.5 saved before rev 3 was the old default (saving any setting
+ * stores them all), so it moves to 0.6; any other value was a real choice and stays. From rev 3 on, an explicit 0.5 is kept.
  */
-export const SETTINGS_REV = 2;
+export const SETTINGS_REV = 3;
 
 export const DEFAULT_SETTINGS = Object.freeze({
   schema: SCHEMA_VERSION,
   rev: SETTINGS_REV,
   cameraDeviceId: null,
   model: 'auto',
-  sensitivity: 0.5,
+  sensitivity: 0.6,
   volumes: Object.freeze({ master: 0.8, sfx: 0.9, music: 0.6, voice: 0.9 }),
   mirror: true,
   showSkeleton: true,
@@ -546,7 +550,8 @@ export function sanitizeSettings(raw) {
     rev: SETTINGS_REV,
     cameraDeviceId: typeof s.cameraDeviceId === 'string' && s.cameraDeviceId.length <= 512 ? s.cameraDeviceId : null,
     model,
-    sensitivity: v01(s.sensitivity, d.sensitivity),
+    // (rev 3: a 0.5 saved before was the old default — see SETTINGS_REV)
+    sensitivity: rev < 3 && finite(s.sensitivity) && Math.abs(s.sensitivity - 0.5) < 1e-6 ? d.sensitivity : v01(s.sensitivity, d.sensitivity),
     volumes: {
       master: v01(vol.master, d.volumes.master),
       sfx: v01(vol.sfx, d.volumes.sfx),

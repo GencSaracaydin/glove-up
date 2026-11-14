@@ -464,6 +464,17 @@ export const DEFAULT_TUNING = Object.freeze({
    *  On the blind close-camera set it changes no straight: its straights that fire as hooks are bent at the decision (0.12–0.46). */
   hookExtMinS: 0.65,
   hookExtElbowImgMargin: 0.05,
+  /** Body hooks (2026-11-13, a player's report: body shots registered less — people hook to the body, nobody throws
+   *  straights there). A hook to the body is thrown with the elbow LOW: bent about 90° and kept by the side, the fist at
+   *  rib height. The "elbow raised" test (hookElbowMin / hookElbowImgMin, imgHookElbow on the picture path) and the
+   *  wrist floor 1.1 SW below the shoulder line are the head hook's: with them every body hook failed (synthetic body
+   *  hooks: 0 of 240 recognised as hooks; the fist then came back up to the guard and fired as an uppercut to the HEAD).
+   *  A fist that ends at body height — the target's own split (bodySplit) — needs instead the elbow out to its side by at
+   *  least bodyHookElbowOut SW (the picture, elbow vs. its shoulder) and the fist above bodyHookMinY SW; the forearm's
+   *  shape (long, flat, pointing at the midline), the sweep, the speed and every other hook gate stay. false = off. */
+  bodyHook: true,
+  bodyHookElbowOut: 0,
+  bodyHookMinY: -1.7,
 
   // ── uppercut validation ──
   /** Upward wrist travel from its lowest point (image SW and world AL). */
@@ -2747,9 +2758,11 @@ export class GestureRecognizer {
     // ── hook ── (image-plane shape: the forearm ends long, horizontal and pointing at the
     //    midline with the elbow out and up — robust where 3D elbow angles are not)
     const elbowRaised = (has(f.elbowUp) && f.elbowUp >= T.hookElbowMin) || info.elbowImgUp >= T.hookElbowImgMin;
+    // (a body hook keeps the elbow low, by the side: at body height the elbow only has to be out to its side — bodyHook*)
+    info.bodyLow = !!T.bodyHook && this._targetZ(f) < -T.bodySplit && info.elbowOut >= T.bodyHookElbowOut && f.w[1] > T.bodyHookMinY;
     const hookOk = medialDisp >= T.hookMinDisp && st.peakH >= T.minPeakDrive
       && info.foreMed >= T.hookMinForeMed && Math.abs(info.foreUp) <= T.hookForeSlope * info.foreMed
-      && elbowRaised && dX >= T.hookMinRise && f.w[1] > -1.1 && !nearFace;
+      && (elbowRaised || info.bodyLow) && dX >= T.hookMinRise && (f.w[1] > -1.1 || info.bodyLow) && !nearFace;
     // ── uppercut ── end-state score vs. straights (a straight seen by a low camera also rises
     //    in the picture): bent elbow, elbow kept low (3D and image), arm not pushed out.
     //    Measured at the end only — an uppercut's dip makes start-relative travel look big.
@@ -2899,7 +2912,8 @@ export class GestureRecognizer {
       && !(nearFace && dFwd < 0.15) && !(info.foreUp >= T.imgUpForeUp && info.foreLen >= T.imgUpForeLen && riseImg >= T.imgUpRise);
     if (!kind && !info.hookPending && T.imgPathMinPeak > 0 && (st.peakRaw ?? 0) >= T.imgPathMinPeak && !(T.imgNoDuck && st.duck)) {
       const hookI = medialDisp >= T.hookMinDisp && st.peakH >= T.minPeakDrive && info.foreMed >= T.imgHookForeMed
-        && Math.abs(info.foreUp) <= T.imgHookSlope * info.foreMed && info.elbowImgUp >= T.imgHookElbow && f.w[1] > -1.1 && !nearFace;
+        && Math.abs(info.foreUp) <= T.imgHookSlope * info.foreMed && (info.elbowImgUp >= T.imgHookElbow || info.bodyLow)
+        && (f.w[1] > -1.1 || info.bodyLow) && !nearFace;
       // (an uppercut's upward drive must lead: ≥ imgUpDriveLead × the extension's)
       const upI = riseImg >= T.imgUpRise && riseImg >= T.imgUpRiseVsMed * medialDisp && st.peakU >= T.minPeakDrive && st.peakU >= T.imgUpDriveLead * st.peakS
         && !guardUp && (medialDisp <= T.upMaxMedial || ht.sign * f.w[0] <= T.upMedialMaxLat)

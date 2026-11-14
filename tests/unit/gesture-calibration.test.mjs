@@ -49,7 +49,7 @@ test('calibration: completes on synthetic players with plausible measurements', 
     assert(r.headPunchLevel && Number.isFinite(r.headPunchLevel.image), 'head-punch height measured');
     assert(r.suggestedSensitivity >= 0.35 && r.suggestedSensitivity <= 0.85);
     // progress only moves forward, steps in order, every state has a message
-    const order = ['frame', 'guard', 'right-hand', 'punch-left', 'punch-right', 'done'];
+    const order = ['frame', 'guard', 'right-hand', 'punch-right', 'punch-left', 'done'];   // (the raised RIGHT hand punches first)
     for (let i = 1; i < states.length; i++) {
       assert(states[i].progress >= states[i - 1].progress - 1e-9, 'progress monotonic');
       assert(order.indexOf(states[i].step) >= order.indexOf(states[i - 1].step), 'step order');

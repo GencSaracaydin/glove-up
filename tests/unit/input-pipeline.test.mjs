@@ -388,7 +388,7 @@ function memBackend(seed = {}) {
 }
 
 test('PERF-06 storage: the tracking model defaults to auto; unversioned saves migrate (full → auto, lite stays); rev 2 keeps an explicit full', () => {
-  assert(DEFAULT_SETTINGS.model === 'auto' && DEFAULT_SETTINGS.rev === SETTINGS_REV && SETTINGS_REV === 2);
+  assert(DEFAULT_SETTINGS.model === 'auto' && DEFAULT_SETTINGS.rev === SETTINGS_REV && SETTINGS_REV >= 2);
   assert(sanitizeSettings(null).model === 'auto');
   assert(sanitizeSettings({ model: 'full' }).model === 'auto', 'an old save: full was only the default');
   assert(sanitizeSettings({ model: 'lite' }).model === 'lite', 'an old lite was a real choice');
@@ -400,4 +400,21 @@ test('PERF-06 storage: the tracking model defaults to auto; unversioned saves mi
   const r = store.saveSettings({ model: 'full' });
   assert(r.saved && r.settings.model === 'full', 'an explicit full from Settings is kept');
   assert(new Storage({ backend: memBackend({ [STORAGE_KEYS.settings]: backend.map.get(STORAGE_KEYS.settings) }) }).settings().model === 'full', '… across reloads (rev written)');
+});
+
+test('settings rev 3: the default punch sensitivity is a notch less strict (0.6); an old saved 0.5 (the old default) moves, other values stay', () => {
+  assert.equal(SETTINGS_REV, 3);
+  assert.equal(DEFAULT_SETTINGS.sensitivity, 0.6);
+  assert.equal(sanitizeSettings(null).sensitivity, 0.6, 'fresh players get the new default');
+  assert.equal(sanitizeSettings({ sensitivity: 0.5, rev: 2 }).sensitivity, 0.6, 'a rev 2 save of the old default moves');
+  assert.equal(sanitizeSettings({ sensitivity: 0.5 }).sensitivity, 0.6, 'an unversioned save of the old default moves');
+  assert.equal(sanitizeSettings({ sensitivity: 0.7, rev: 2 }).sensitivity, 0.7, 'a real choice stays');
+  assert.equal(sanitizeSettings({ sensitivity: 0.3, rev: 2 }).sensitivity, 0.3, 'a stricter choice stays');
+  assert.equal(sanitizeSettings({ sensitivity: 0.5, rev: 3 }).sensitivity, 0.5, 'a 0.5 chosen since rev 3 stays');
+  const backend = memBackend({ [STORAGE_KEYS.settings]: JSON.stringify({ schema: 1, rev: 2, model: 'auto', sensitivity: 0.5 }) });
+  const store = new Storage({ backend });
+  assert.equal(store.settings().sensitivity, 0.6, 'migrated on load');
+  assert(store.saveSettings({ sensitivity: 0.5 }).saved);
+  assert.equal(new Storage({ backend: memBackend({ [STORAGE_KEYS.settings]: backend.map.get(STORAGE_KEYS.settings) }) }).settings().sensitivity, 0.5,
+    'an explicit 0.5 from Settings is kept across reloads (rev 3 written)');
 });
